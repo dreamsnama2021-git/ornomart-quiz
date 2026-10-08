@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ornomart Jewellery Quiz</title>
+<link rel="icon" href="emblem.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: one centred column on white; Ornomart logo on top; sticky timer bar during the quiz; steps swap in place. */
+  /* Single light (white) brand theme by choice, colours taken from the Ornomart logo. */
+  /* Armoresa Aged is not on Google Fonts: it loads only if installed locally, else falls back to Cinzel Decorative. */
+  @font-face { font-family: "Armoresa Aged"; src: local("Armoresa Aged"), local("ArmoresaAged"), local("Armoresa-Aged"); }
+  :root {
+    color-scheme: light;
+    --bg: #ffffff;
+    --tint: #f3f6fc;          /* very light blue wash */
+    --surface: #ffffff;
+    --ink: #1b1f4b;           /* logo wordmark navy */
+    --muted: #5a6087;
+    --line: #dde3f0;
+    --gold: #0066cc;          /* bright facet blue (accent) */
+    --gold-soft: #eaf2fc;
+    --sapphire: #00308a;      /* deep ring blue (primary) */
+    --sapphire-soft: #e8eefa;
+    --ok: #1d7a4f;
+    --ok-soft: #e6f5ec;
+    --bad: #c0282d;
+    --bad-soft: #fdecec;
+    --font-display: "Cinzel", "Trajan Pro", "Times New Roman", serif;
+    --font-accent: "Armoresa Aged", "Cinzel Decorative", "Cinzel", serif;
+    --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "Cinzel", "Times New Roman", serif;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  img { max-width: 100%; }
+  body { margin: 0; background: var(--bg); background-image: linear-gradient(180deg, var(--tint) 0, var(--bg) 340px); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+  .logo { display: block; width: 168px; max-width: 60%; height: auto; margin: 0 auto 6px; }
+  header.brand { align-items: center; text-align: center; }
+  header.brand .lede { margin-inline: auto; }
+  header.brand .facts { justify-content: center; }
+  .wrap { max-width: 720px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 56px; display: flex; flex-direction: column; gap: 20px; }
+
+  header.brand { display: flex; flex-direction: column; gap: 6px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+  h1 { font-family: var(--font-display); font-weight: 700; color: var(--sapphire); letter-spacing: .02em; font-size: clamp(30px, 6vw, 44px); line-height: 1.1; margin: 0; text-wrap: balance; }
+  .lede { color: var(--muted); margin: 0; max-width: 60ch; }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .chip { font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--sapphire-soft); color: var(--sapphire); }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px -18px rgba(0,48,138,.28); display: flex; flex-direction: column; gap: 16px; }
+  h2 { font-family: var(--font-display); font-weight: 600; font-size: 22px; color: var(--ink); margin: 0; }
+
+  form .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 560px) { form .grid { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-family: var(--font-display); font-size: 13px; font-weight: 600; letter-spacing: .03em; }
+  input, select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--sapphire); outline-offset: 2px; }
+  .err { font-size: 12.5px; color: var(--bad); min-height: 1em; }
+
+  button { font: inherit; font-family: var(--font-display); letter-spacing: .04em; cursor: pointer; border: 0; border-radius: 999px; padding: 12px 24px; font-weight: 700; }
+  .btn-primary { background: linear-gradient(135deg, var(--sapphire), var(--gold)); color: var(--surface); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost { background: transparent; color: var(--sapphire); border: 1px solid var(--line); }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .btn-google { background: var(--surface); color: var(--ink); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; font-family: var(--font-body); letter-spacing: 0; }
+  .btn-google:hover { background: var(--tint); }
+  .btn-google svg { width: 18px; height: 18px; flex: none; }
+  .divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .signed-in { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--sapphire-soft); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; }
+  .signed-in svg { width: 18px; height: 18px; flex: none; }
+  .signed-in span { min-width: 0; overflow-wrap: anywhere; }
+  .link { background: none; border: 0; padding: 0; color: var(--sapphire); font-family: var(--font-body); letter-spacing: 0; font-weight: 700; font-size: 13px; border-radius: 4px; margin-left: auto; }
+  .link:hover { text-decoration: underline; }
+  input[readonly] { color: var(--muted); }
+
+  /* Timer bar */
+  .timerbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; box-shadow: 0 6px 18px -12px rgba(0,0,0,.35); }
+  .clock { font-family: var(--font-mono); font-size: 26px; font-variant-numeric: tabular-nums; color: var(--ink); min-width: 5ch; }
+  .timerbar.low .clock { color: var(--bad); }
+  .meter { flex: 1 1 160px; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .meter > span { display: block; height: 100%; width: 100%; background: var(--gold); transition: width 1s linear; }
+  .timerbar.low .meter > span { background: var(--bad); }
+  .answered { font-size: 13px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  /* Questions */
+  .q { display: flex; flex-direction: column; gap: 10px; padding-block: 18px; border-top: 1px solid var(--line); }
+  .q:first-child { border-top: 0; padding-top: 0; }
+  .q-head { display: flex; gap: 10px; align-items: baseline; }
+  .q-num { font-family: var(--font-mono); font-size: 13px; color: var(--gold); flex: none; }
+  .q-text { font-family: var(--font-display); font-weight: 600; font-size: 16px; margin: 0; }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (max-width: 560px) { .opts { grid-template-columns: 1fr; } }
+  .opt { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; font-weight: 500; font-size: 14px; background: var(--surface); min-width: 0; }
+  .opt input { width: auto; accent-color: var(--sapphire); margin: 0; flex: none; }
+  .opt:hover { border-color: var(--sapphire); }
+  .opt:has(input:checked) { border-color: var(--sapphire); background: var(--sapphire-soft); }
+  .opt.correct { border-color: var(--ok); background: var(--ok-soft); }
+  .opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+  .opt .tag { margin-left: auto; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .opt.correct .tag { color: var(--ok); }
+  .opt.wrong .tag { color: var(--bad); }
+  .locked .opt { cursor: default; }
+
+  /* Result */
+  .score { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .score .big { font-family: var(--font-accent); font-size: 68px; line-height: 1; color: var(--sapphire); font-variant-numeric: tabular-nums; }
+  .score .of { font-size: 18px; color: var(--muted); }
+  .verdict { margin: 0; color: var(--muted); }
+  .coupon { position: relative; overflow: hidden; border: 2px dashed var(--gold); background: var(--gold-soft); border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .coupon .off { font-family: var(--font-accent); font-size: 36px; color: var(--gold); line-height: 1.1; }
+  .code-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .coupon::after { content: ""; position: absolute; right: -36px; bottom: -36px; width: 170px; height: 170px; background: url(emblem.png) center/contain no-repeat; opacity: .14; pointer-events: none; }
+  .coupon > * { position: relative; z-index: 1; }
+  .code { font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: .12em; padding: 8px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; user-select: all; }
+  .fine { font-size: 12.5px; color: var(--muted); margin: 0; }
+  .timeout-note { font-size: 13px; font-weight: 600; color: var(--bad); margin: 0; }
+
+  @media (prefers-reduced-motion: reduce) { .meter > span { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="brand">
+    <img class="logo" src="logo.png" alt="Ornomart" width="560" height="372">
+    <span class="eyebrow">Jewellery Knowledge Game</span>
+    <h1>Quiz Challenge</h1>
+    <p class="lede">Answer 10 questions on gold, diamonds, gemstones and hallmarking. The more you get right, the bigger your coupon.</p>
+    <div class="facts">
+      <span class="chip">10 MCQ</span>
+      <span class="chip">Coupon for every player</span>
+    </div>
+  </header>
+
+  <!-- Step 1: user details -->
+  <section class="panel" id="step-form">
+    <h2>Enter Your Details</h2>
+    <div id="googleBox" hidden style="display:flex;flex-direction:column;gap:14px">
+      <button type="button" class="btn-google" id="googleBtn"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg><span>Continue with Google</span></button>
+      <div class="divider">or fill in your details</div>
+    </div>
+    <div class="signed-in" id="signedIn" hidden>
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg><span id="signedInText"></span>
+      <button type="button" class="link" id="googleOut">Not you? Sign out</button>
+    </div>
+    <p class="err" id="googleErr" role="alert" hidden></p>
+    <form id="userForm" novalidate>
+      <div class="grid">
+        <div class="field">
+          <label for="name">Full Name</label>
+          <input id="name" name="name" autocomplete="name" placeholder="e.g. Priya Sharma">
+          <span class="err" id="err-name"></span>
+        </div>
+        <div class="field">
+          <label for="phone">Mobile Number</label>
+          <input id="phone" name="phone" inputmode="numeric" maxlength="10" autocomplete="tel" placeholder="10 digit number">
+          <span class="err" id="err-phone"></span>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com">
+          <span class="err" id="err-email"></span>
+        </div>
+        <div class="field">
+          <label for="city">City</label>
+          <input id="city" name="city" autocomplete="address-level2" placeholder="e.g. Jaipur">
+          <span class="err" id="err-city"></span>
+        </div>
+        <div class="field full">
+          <label for="interest">What would you like to buy? <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+          <select id="interest" name="interest">
+            <option value="">Select an option</option>
+            <option>Gold jewellery</option>
+            <option>Diamond jewellery</option>
+            <option>Silver jewellery</option>
+            <option>Bridal set</option>
+            <option>Gemstones</option>
+          </select>
+          <span class="err" id="err-interest"></span>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:16px">
+        <button type="submit" class="btn-primary">Submit &amp; Start Quiz</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Step 2: quiz -->
+  <div id="step-quiz" hidden>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="timerbar" id="timerbar" role="timer" aria-live="off">
+        <span class="clock" id="clock">7:00</span>
+        <div class="meter" aria-hidden="true"><span id="meterFill"></span></div>
+        <span class="answered" id="answered">0 / 10 answered</span>
+      </div>
+      <section class="panel">
+        <h2 id="hello">Best of luck!</h2>
+        <p class="fine" style="margin-top:-8px">You have 7 minutes to answer all 10 questions. Unanswered questions are submitted automatically when time runs out.</p>
+        <form id="quizForm">
+          <div id="questions"></div>
+          <div class="actions" style="margin-top:8px">
+            <button type="submit" class="btn-primary" id="submitQuiz">Submit Answers</button>
+            <span class="err" id="quizErr"></span>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <!-- Step 3: result -->
+  <section class="panel" id="step-result" hidden>
+    <span class="eyebrow">Your Result</span>
+    <p class="timeout-note" id="timeoutNote" hidden>Time's up! Your answers were submitted automatically.</p>
+    <div class="score"><span class="big" id="scoreBig">0</span><span class="of">/ 10 correct</span></div>
+    <p class="verdict" id="verdict"></p>
+    <p class="timeout-note" id="saveNote" hidden>We could not save your entry. Please show this screen to our store staff.</p>
+
+    <div class="coupon">
+      <span class="eyebrow">Your Coupon</span>
+      <span class="off" id="couponOff">5% OFF</span>
+      <span id="couponOn">On making charges</span>
+      <div class="code-row">
+        <span class="code" id="couponCode">GEM-0000</span>
+        <button type="button" class="btn-ghost" id="copyBtn">Copy Code</button>
+      </div>
+      <p class="fine" id="couponFine"></p>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-ghost" id="reviewBtn">Review Answers</button>
+    </div>
+  </section>
+
+  <section class="panel" id="step-review" hidden>
+    <h2>Answer review</h2>
+    <div id="reviewList" class="locked"></div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  const TOTAL_SECONDS = 7 * 60;
+  const COUNT = 10;
+
+  // Question bank: 10 random questions are picked for each player. `a` = index of correct option.
+  const BANK = [
+    { q: "22 karat (22K) gold ki purity kitni hoti hai?", o: ["75%", "91.6%", "99.9%", "58.5%"], a: 1 },
+    { q: "18 karat (18K) gold mein shuddh sona kitna hota hai?", o: ["75%", "83.3%", "91.6%", "62%"], a: 0 },
+    { q: "India mein gold hallmarking kaun si sanstha karti hai?", o: ["RBI", "BIS", "SEBI", "FSSAI"], a: 1 },
+    { q: "Hallmarked gold par HUID code kitne characters ka hota hai?", o: ["4", "6", "8", "12"], a: 1 },
+    { q: "Diamond ke '4 Cs' mein inme se kya shaamil NAHI hai?", o: ["Cut", "Clarity", "Carat", "Cost"], a: 3 },
+    { q: "1 carat diamond ka wajan kitna hota hai?", o: ["100 mg", "200 mg", "500 mg", "1 gram"], a: 1 },
+    { q: "Mohs scale par sabse kathor (hardest) natural padarth kaun sa hai?", o: ["Ruby", "Sapphire", "Diamond", "Quartz"], a: 2 },
+    { q: "Ruby (Manik) kis mineral ki ek variety hai?", o: ["Beryl", "Corundum", "Quartz", "Topaz"], a: 1 },
+    { q: "Emerald (Panna) kis mineral family se aata hai?", o: ["Beryl", "Corundum", "Garnet", "Feldspar"], a: 0 },
+    { q: "Platinum jewellery par 'Pt950' ka matlab kya hai?", o: ["950 gram", "95% platinum", "9.5% platinum", "950 rupees per gram"], a: 1 },
+    { q: "Sterling silver ki purity kitni hoti hai?", o: ["99.9%", "92.5%", "85%", "80%"], a: 1 },
+    { q: "Rose gold ko gulabi rang kis dhatu se milta hai?", o: ["Silver", "Copper", "Zinc", "Nickel"], a: 1 },
+    { q: "Kundan jewellery mukhya roop se kis rajya se judi hai?", o: ["Kerala", "Rajasthan", "Assam", "Punjab"], a: 1 },
+    { q: "Temple jewellery ki parampara kis kshetra se hai?", o: ["South India", "North-East", "Kashmir", "Gujarat"], a: 0 },
+    { q: "'Polki' jewellery mein kis tarah ke diamond lagte hain?", o: ["Lab-grown", "Uncut / natural uncut", "Coloured", "Artificial"], a: 1 },
+    { q: "April mahine ka birthstone kaun sa hai?", o: ["Emerald", "Ruby", "Diamond", "Pearl"], a: 2 },
+    { q: "Natural pearl (moti) kaise banta hai?", o: ["Khaan se nikalta hai", "Oyster / mollusc ke andar", "Jwalamukhi se", "Ped ke ras se"], a: 1 },
+    { q: "Diamond clarity grade 'VVS' ka full form kya hai?", o: ["Very Very Slightly Included", "Very Valuable Stone", "Visible Very Small", "Very Vivid Shine"], a: 0 },
+    { q: "Lab-grown diamond aur natural diamond mein kya sach hai?", o: ["Lab-grown nakli kaanch hai", "Dono chemically same (carbon) hain", "Lab-grown zyada kathor hai", "Natural diamond plastic hai"], a: 1 },
+    { q: "'Solitaire' ring ka matlab kya hota hai?", o: ["Kai chhote stones", "Ek single main diamond", "Bina stone ki ring", "Do rangon ka sona"], a: 1 },
+    { q: "Jewellery bill mein 'making charges' kis cheez ke liye hote hain?", o: ["GST", "Karigari aur design ki laagat", "Gold ka bhaav", "Packing"], a: 1 },
+    { q: "India mein gold ka bhaav aam taur par kis unit mein bataya jata hai?", o: ["Per kg", "Per 10 gram", "Per ounce", "Per tola only"], a: 1 },
+    { q: "'Navratna' jewellery mein kitne ratna hote hain?", o: ["5", "7", "9", "12"], a: 2 },
+    { q: "Inme se kaun sa din sona kharidne ke liye shubh maana jata hai?", o: ["Akshaya Tritiya", "Holi", "Lohri", "Makar Sankranti"], a: 0 }
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  let user = null, picked = [], timerId = null, endAt = 0, finished = false;
+
+  // Supabase client (players can only add entries; see supabase/schema.sql).
+  const cfg = window.QUIZ_CONFIG || {};
+  const sb = (window.supabase && cfg.SUPABASE_URL && !/YOUR-/.test(cfg.SUPABASE_URL + cfg.SUPABASE_ANON_KEY))
+    ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { storageKey: "ornomart-quiz-player" } })
+    : null;
+
+  // Optional Google sign-in for players: fills in name and email.
+  const urlInfo = new URLSearchParams((location.hash || "").slice(1) + "&" + location.search.slice(1));
+  let googleOn = false;
+// Is the Google provider switched on in Supabase? (public auth settings endpoint)
+  const googleEnabled = sb ? fetch(cfg.SUPABASE_URL + "/auth/v1/settings", { headers: { apikey: cfg.SUPABASE_ANON_KEY } })
+    .then((r) => r.json()).then((j) => !!(j.external && j.external.google)).catch(() => false) : Promise.resolve(false);
+  function showGoogleError(msg) { $("googleErr").textContent = msg; $("googleErr").hidden = !msg; }
+
+  function applyGoogleUser(u) {
+    const signedIn = !!u;
+    $("googleBox").hidden = signedIn || !sb || !googleOn;
+    $("signedIn").hidden = !signedIn;
+    $("email").readOnly = signedIn;
+    if (!signedIn) return;
+    const meta = u.user_metadata || {};
+    const fullName = meta.full_name || meta.name || "";
+    $("signedInText").textContent = "Signed in with Google as " + (fullName ? fullName + " (" + u.email + ")" : u.email);
+    if (!$("name").value.trim() && fullName) $("name").value = fullName;
+    $("email").value = u.email || "";
+    showGoogleError("");
+  }
+
+  if (sb) {
+    $("googleBtn").addEventListener("click", async () => {
+      $("googleBtn").disabled = true;
+      const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
+      if (error) {
+        $("googleBtn").disabled = false;
+        showGoogleError(/not enabled|unsupported provider/i.test(error.message) ? "Google sign-in is not available right now. Please fill in your details below." : error.message);
+      }
+    });
+    $("googleOut").addEventListener("click", async () => {
+      await sb.auth.signOut();
+      $("name").value = ""; $("email").value = "";
+      applyGoogleUser(null);
+    });
+    let currentUser = null;
+    sb.auth.onAuthStateChange((event, session) => {
+      if (location.hash.includes("access_token")) history.replaceState(null, "", location.pathname);
+      currentUser = session ? session.user : null;
+      applyGoogleUser(currentUser);
+    });
+    googleEnabled.then((on) => { googleOn = on; applyGoogleUser(currentUser); });
+    if (urlInfo.get("error_description")) {
+      showGoogleError("Google sign-in did not finish. Please try again or fill in your details below.");
+      history.replaceState(null, "", location.pathname);
+    }
+  } else {
+    $("googleBox").hidden = true;
+  }
+
+  async function saveEntry(row) {
+    if (!sb) { console.warn("Supabase is not configured in config.js; entry not saved."); return false; }
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const { error } = await sb.from("quiz_submissions").insert(row);
+      if (!error) return true;
+      console.error("Saving entry failed:", error.message);
+    }
+    return false;
+  }
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+
+  // Step 1: validate and start
+  $("phone").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10); });
+
+  $("userForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const v = {
+      name: $("name").value.trim(),
+      phone: $("phone").value.trim(),
+      email: $("email").value.trim(),
+      city: $("city").value.trim(),
+      interest: $("interest").value
+    };
+    const errs = {
+      name: v.name.length < 2 ? "Please enter your name." : "",
+      phone: /^[6-9]\d{9}$/.test(v.phone) ? "" : "Please enter a valid 10-digit mobile number.",
+      email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email) ? "" : "Please enter a valid email, e.g. name@example.com",
+      city: v.city ? "" : "Please enter your city.",
+      interest: ""
+    };
+    let ok = true;
+    for (const k in errs) { $("err-" + k).textContent = errs[k]; if (errs[k]) ok = false; }
+    if (!ok) return;
+    user = v;
+    startQuiz();
+  });
+
+  // Step 2: quiz
+  function startQuiz() {
+    finished = false;
+    picked = shuffle(BANK).slice(0, COUNT).map((item) => {
+      const order = shuffle(item.o.map((_, i) => i));
+      return { q: item.q, o: order.map((i) => item.o[i]), a: order.indexOf(item.a) };
+    });
+    $("hello").textContent = "Best of luck, " + user.name.split(" ")[0] + "!";
+    $("questions").innerHTML = picked.map((it, qi) => `
+      <div class="q">
+        <div class="q-head"><span class="q-num">Q${String(qi + 1).padStart(2, "0")}</span><p class="q-text">${it.q}</p></div>
+        <div class="opts">
+          ${it.o.map((opt, oi) => `
+            <label class="opt"><input type="radio" id="q${qi}o${oi}" name="q${qi}" value="${oi}"><span>${opt}</span></label>`).join("")}
+        </div>
+      </div>`).join("");
+    $("quizErr").textContent = "";
+    updateAnswered();
+    $("step-form").hidden = true;
+    $("step-result").hidden = true;
+    $("step-review").hidden = true;
+    $("step-quiz").hidden = false;
+    window.scrollTo({ top: 0 });
+
+    endAt = Date.now() + TOTAL_SECONDS * 1000;
+    tick();
+    clearInterval(timerId);
+    timerId = setInterval(tick, 250);
+  }
+
+  function tick() {
+    const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+    const m = Math.floor(left / 60), s = left % 60;
+    $("clock").textContent = m + ":" + String(s).padStart(2, "0");
+    $("meterFill").style.width = (left / TOTAL_SECONDS * 100) + "%";
+    $("timerbar").classList.toggle("low", left <= 60);
+    if (left === 0) finish(true);
+  }
+
+  function answers() {
+    return picked.map((_, qi) => {
+      const el = document.querySelector(`input[name="q${qi}"]:checked`);
+      return el ? Number(el.value) : null;
+    });
+  }
+
+  function updateAnswered() {
+    const n = answers().filter((x) => x !== null).length;
+    $("answered").textContent = n + " / " + COUNT + " answered";
+  }
+  $("questions").addEventListener("change", () => { updateAnswered(); $("quizErr").textContent = ""; });
+
+  $("quizForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const left = answers().filter((x) => x === null).length;
+    if (left > 0) { $("quizErr").textContent = left + " question(s) still unanswered. Please answer all questions."; return; }
+    finish(false);
+  });
+
+  // Step 3: score + coupon
+  function couponFor(score) {
+    if (score === 10) return { off: "20% OFF", on: "On making charges", prefix: "GEM20" };
+    if (score >= 8)  return { off: "15% OFF", on: "On making charges", prefix: "GEM15" };
+    if (score >= 5)  return { off: "10% OFF", on: "On making charges", prefix: "GEM10" };
+    return { off: "5% OFF", on: "On making charges", prefix: "GEM05" };
+  }
+
+  function finish(timedOut) {
+    if (finished) return;
+    finished = true;
+    clearInterval(timerId);
+    const given = answers();
+    const score = given.reduce((n, g, i) => n + (g === picked[i].a ? 1 : 0), 0);
+    const c = couponFor(score);
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let tail = ""; for (let i = 0; i < 5; i++) tail += chars[Math.floor(Math.random() * chars.length)];
+    const code = c.prefix + "-" + tail;
+    const valid = new Date(Date.now() + 30 * 864e5).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+
+    $("scoreBig").textContent = score;
+    $("verdict").textContent =
+      score === 10 ? "Outstanding! You are a true jewellery expert." :
+      score >= 8 ? "Great job! You know your jewellery well." :
+      score >= 5 ? "Good effort! A little more and you will hit full marks." :
+      "Thanks for playing. Here is a coupon for you too.";
+    $("couponOff").textContent = c.off;
+    $("couponOn").textContent = c.on;
+    $("couponCode").textContent = code;
+    $("couponFine").textContent = "For " + user.name + " · Valid till " + valid + " · Show this code at the store.";
+    $("timeoutNote").hidden = !timedOut;
+    $("copyBtn").textContent = "Copy code";
+
+    $("reviewList").innerHTML = picked.map((it, qi) => `
+      <div class="q">
+        <div class="q-head"><span class="q-num">Q${String(qi + 1).padStart(2, "0")}</span><p class="q-text">${it.q}</p></div>
+        <div class="opts">
+          ${it.o.map((opt, oi) => {
+            const cls = oi === it.a ? "correct" : (oi === given[qi] ? "wrong" : "");
+            const tag = oi === it.a ? "Correct" : (oi === given[qi] ? "Your answer" : "");
+            return `<div class="opt ${cls}"><span>${opt}</span>${tag ? `<span class="tag">${tag}</span>` : ""}</div>`;
+          }).join("")}
+        </div>
+        ${given[qi] === null ? '<span class="fine">Not answered</span>' : ""}
+      </div>`).join("");
+
+    $("saveNote").hidden = true;
+    const taken = Math.min(TOTAL_SECONDS, Math.round(TOTAL_SECONDS - (endAt - Date.now()) / 1000));
+    saveEntry({
+      name: user.name, phone: user.phone, email: user.email.toLowerCase(), city: user.city,
+      interest: user.interest || null, score, total: COUNT, discount: c.off.split(" ")[0],
+      coupon_code: code, timed_out: timedOut, time_taken_sec: Math.max(0, taken)
+    }).then((ok) => { $("saveNote").hidden = ok; });
+
+    $("step-quiz").hidden = true;
+    $("step-result").hidden = false;
+    window.scrollTo({ top: 0 });
+  }
+
+  $("copyBtn").addEventListener("click", () => {
+    const code = $("couponCode").textContent;
+    const done = () => { $("copyBtn").textContent = "Copied"; };
+    const fallback = () => {
+      const r = document.createRange(); r.selectNodeContents($("couponCode"));
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      $("copyBtn").textContent = "Code selected";
+    };
+    try { navigator.clipboard.writeText(code).then(done, fallback); } catch (_) { fallback(); }
+  });
+
+  $("reviewBtn").addEventListener("click", () => {
+    $("step-review").hidden = false;
+    $("step-review").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+})();
+</script>
+</body>
+</html>

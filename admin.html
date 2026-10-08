@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Ornomart Quiz Admin</title>
+<link rel="icon" href="emblem.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: brand top bar; summary tiles, score distribution, then a filterable entries table. Same white Ornomart theme as the quiz. */
+  :root {
+    color-scheme: light;
+    --bg: #ffffff;
+    --tint: #f3f6fc;
+    --surface: #ffffff;
+    --ink: #1b1f4b;
+    --muted: #5a6087;
+    --line: #dde3f0;
+    --accent: #0066cc;
+    --accent-soft: #eaf2fc;
+    --primary: #00308a;
+    --ok: #1d7a4f;
+    --ok-soft: #e6f5ec;
+    --bad: #c0282d;
+    --bad-soft: #fdecec;
+    --font-display: "Cinzel", "Trajan Pro", "Times New Roman", serif;
+    --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  img { max-width: 100%; }
+  body { margin: 0; background: var(--tint); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; display: flex; flex-direction: column; gap: 18px; }
+
+  .topbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .topbar img { width: 44px; height: 44px; }
+  .topbar .titles { display: flex; flex-direction: column; min-width: 0; }
+  .topbar h1 { font-family: var(--font-display); font-weight: 700; font-size: 22px; margin: 0; color: var(--primary); letter-spacing: .02em; }
+  .topbar .sub { color: var(--muted); font-size: 12.5px; }
+  .topbar .spacer { flex: 1; }
+  .who { font-size: 12.5px; color: var(--muted); }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  h2 { font-family: var(--font-display); font-weight: 600; font-size: 17px; margin: 0; }
+
+  button, .btn { font: inherit; font-weight: 700; cursor: pointer; border-radius: 999px; padding: 9px 18px; border: 1px solid transparent; }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: var(--surface); }
+  .btn-ghost { background: var(--surface); color: var(--primary); border-color: var(--line); }
+  .btn-small { padding: 5px 12px; font-size: 12.5px; }
+  button:disabled { opacity: .55; cursor: default; }
+  input, select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  label { font-family: var(--font-display); font-weight: 600; font-size: 12.5px; letter-spacing: .03em; }
+
+  /* Login */
+  .wrap.centered { min-height: 100vh; min-height: 100dvh; justify-content: center; align-items: center; padding-block: 24px; }
+  .login { max-width: 380px; width: 100%; margin: 0 auto; }
+  .login img { width: 150px; height: auto; margin: 0 auto; display: block; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field input { width: 100%; }
+  .msg { font-size: 13px; min-height: 1.2em; margin: 0; }
+  .msg.err { color: var(--bad); }
+  .msg.ok { color: var(--ok); }
+  .pw { position: relative; }
+  .pw input { padding-right: 46px; }
+  .pw-toggle { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: transparent; border: 0; padding: 7px; border-radius: 8px; color: var(--muted); display: flex; }
+  .pw-toggle:hover { color: var(--primary); background: var(--accent-soft); }
+  .pw-toggle svg { width: 20px; height: 20px; }
+  .btn-google { background: var(--surface); color: var(--ink); border-color: var(--line); display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
+  .btn-google:hover { background: var(--tint); }
+  .btn-google svg { width: 18px; height: 18px; flex: none; }
+  .divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .link { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; font-size: 13px; border-radius: 4px; }
+  .link:hover { text-decoration: underline; }
+  .auth-form { display: flex; flex-direction: column; gap: 12px; }
+  .auth-note { color: var(--muted); font-size: 13px; margin: 0; text-align: center; }
+  .demo-banner { margin: 0; background: var(--accent-soft); color: var(--primary); border: 1px dashed var(--accent); border-radius: 12px; padding: 10px 14px; font-weight: 600; }
+  .pill.google { background: var(--tint); color: var(--muted); margin-left: 6px; }
+
+  /* Tiles */
+  .tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 900px) { .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+  .tile .k { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .tile .v { font-family: var(--font-display); font-size: 28px; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; }
+  .tile .s { font-size: 12px; color: var(--muted); }
+
+  .split { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; }
+  @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+
+  /* Score distribution */
+  .dist { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 6px; align-items: end; height: 150px; }
+  .bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; }
+  .bar .fill { width: 100%; max-width: 34px; background: var(--accent); border-radius: 6px 6px 2px 2px; min-height: 2px; }
+  .bar .n { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .dist-x { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 6px; text-align: center; font-size: 11.5px; font-weight: 700; color: var(--ink); }
+  .axis-note { font-size: 12px; color: var(--muted); margin: 0; }
+
+  /* Coupon tiers */
+  .tiers { display: flex; flex-direction: column; gap: 10px; }
+  .tier { display: grid; grid-template-columns: 52px 1fr 44px; gap: 10px; align-items: center; font-variant-numeric: tabular-nums; }
+  .tier .lbl { font-weight: 700; }
+  .tier .track { height: 10px; background: var(--accent-soft); border-radius: 99px; overflow: hidden; }
+  .tier .track span { display: block; height: 100%; background: var(--primary); }
+  .tier .cnt { text-align: right; color: var(--muted); }
+
+  /* Coupon lookup */
+  .lookup { display: flex; gap: 8px; flex-wrap: wrap; }
+  .lookup input { flex: 1 1 180px; text-transform: uppercase; letter-spacing: .08em; }
+  .lookup-result { border: 1px dashed var(--line); border-radius: 12px; padding: 12px; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+
+  /* Table */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .filters input[type="search"] { flex: 1 1 220px; }
+  .count { color: var(--muted); font-size: 12.5px; margin-left: auto; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; min-width: 900px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+  th { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--tint); position: sticky; top: 0; }
+  tbody tr:hover { background: var(--accent-soft); }
+  td.num { font-variant-numeric: tabular-nums; }
+  .code { font-family: ui-monospace, Consolas, monospace; font-weight: 600; letter-spacing: .05em; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11.5px; font-weight: 700; }
+  .pill.open { background: var(--accent-soft); color: var(--accent); }
+  .pill.used { background: var(--ok-soft); color: var(--ok); }
+  .pill.late { background: var(--bad-soft); color: var(--bad); }
+  .score-cell { font-weight: 700; }
+  .empty { text-align: center; color: var(--muted); padding: 28px 12px; white-space: normal; }
+</style>
+</head>
+<body>
+<div class="wrap centered" id="wrap">
+
+  <!-- Login -->
+  <section class="panel login" id="loginView">
+    <img src="logo.png" alt="Ornomart" width="560" height="372">
+    <h2 style="text-align:center" id="authTitle">Quiz Admin Login</h2>
+
+    <!-- Sign in -->
+    <div class="auth-form" id="signInView">
+      <button type="button" class="btn btn-google" id="googleBtn"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg><span>Continue with Google</span></button>
+      <div class="divider">or sign in with email</div>
+      <form class="auth-form" id="loginForm" novalidate>
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input id="loginEmail" type="email" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="loginPass">Password</label>
+          <div class="pw">
+            <input id="loginPass" type="password" autocomplete="current-password" required>
+            <button type="button" class="pw-toggle" data-toggle="loginPass" aria-label="Show password" aria-pressed="false"><svg class="i-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="i-hide" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:-4px">
+          <button type="button" class="link" id="forgotLink">Forgot password?</button>
+        </div>
+        <button type="submit" class="btn-primary" id="loginBtn">Sign In</button>
+        <p class="msg err" id="loginMsg" role="alert"></p>
+      </form>
+    </div>
+
+    <!-- Forgot password -->
+    <form class="auth-form" id="forgotForm" hidden novalidate>
+      <p class="auth-note">Enter your admin email. We will send you a link to set a new password.</p>
+      <div class="field">
+        <label for="forgotEmail">Email</label>
+        <input id="forgotEmail" type="email" autocomplete="username" required>
+      </div>
+      <button type="submit" class="btn-primary" id="forgotBtn">Send Reset Link</button>
+      <p class="msg" id="forgotMsg" role="status"></p>
+      <button type="button" class="link" id="backToLogin" style="align-self:center">Back to sign in</button>
+    </form>
+
+    <!-- Set new password (after opening the reset link) -->
+    <form class="auth-form" id="newPassForm" hidden novalidate>
+      <p class="auth-note">Choose a new password with at least 8 characters.</p>
+        <div class="field">
+          <label for="newPass">New Password</label>
+          <div class="pw">
+            <input id="newPass" type="password" autocomplete="new-password" required>
+            <button type="button" class="pw-toggle" data-toggle="newPass" aria-label="Show password" aria-pressed="false"><svg class="i-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="i-hide" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="newPass2">Confirm New Password</label>
+          <div class="pw">
+            <input id="newPass2" type="password" autocomplete="new-password" required>
+            <button type="button" class="pw-toggle" data-toggle="newPass2" aria-label="Show password" aria-pressed="false"><svg class="i-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="i-hide" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button>
+          </div>
+        </div>
+      <button type="submit" class="btn-primary" id="newPassBtn">Save New Password</button>
+      <p class="msg err" id="newPassMsg" role="alert"></p>
+    </form>
+  </section>
+
+  <!-- Dashboard -->
+  <div id="dashView" hidden style="display:flex;flex-direction:column;gap:18px;width:100%">
+    <header class="topbar">
+      <img src="emblem.png" alt="">
+      <div class="titles">
+        <h1>Quiz Dashboard</h1>
+        <span class="sub" id="updatedAt">Loading entries…</span>
+      </div>
+      <span class="spacer"></span>
+      <span class="who" id="whoAmI"></span>
+      <button type="button" class="btn-ghost" id="refreshBtn">Refresh</button>
+      <button type="button" class="btn-ghost" id="exportBtn">Export CSV</button>
+      <button type="button" class="btn-ghost" id="logoutBtn">Sign Out</button>
+    </header>
+
+    <p class="msg err" id="dashMsg" hidden></p>
+    <p class="demo-banner" id="demoBanner" hidden>Demo mode: these are example entries, not real quiz data. Sign in to see real entries.</p>
+
+    <section class="tiles" aria-label="Summary">
+      <div class="tile"><span class="k">Players</span><span class="v" id="tTotal">0</span><span class="s" id="tToday">0 today</span></div>
+      <div class="tile"><span class="k">Average score</span><span class="v" id="tAvg">0</span><span class="s">out of 10</span></div>
+      <div class="tile"><span class="k">Full marks</span><span class="v" id="tPerfect">0</span><span class="s" id="tPerfectPct">0% of players</span></div>
+      <div class="tile"><span class="k">Coupons redeemed</span><span class="v" id="tRedeemed">0</span><span class="s" id="tRedeemedPct">0% of coupons</span></div>
+      <div class="tile"><span class="k">Ran out of time</span><span class="v" id="tTimeout">0</span><span class="s" id="tAvgTime">Avg time 0:00</span></div>
+    </section>
+
+    <div class="split">
+      <section class="panel">
+        <h2>Score Distribution</h2>
+        <div>
+          <div class="dist" id="dist"></div>
+          <div class="dist-x" id="distX"></div>
+        </div>
+        <p class="axis-note">Players by correct answers (0 to 10)</p>
+      </section>
+
+      <section class="panel">
+        <h2>Coupons Issued</h2>
+        <div class="tiers" id="tiers"></div>
+        <h2 style="margin-top:6px">Check a Coupon</h2>
+        <form class="lookup" id="lookupForm">
+          <input id="lookupCode" placeholder="e.g. GEM15-AB3CD" aria-label="Coupon code" autocomplete="off">
+          <button type="submit" class="btn-primary btn-small">Check</button>
+        </form>
+        <div class="lookup-result" id="lookupResult" hidden></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>All Entries</h2>
+      <div class="filters">
+        <input type="search" id="search" placeholder="Search name, phone, email, city or coupon" aria-label="Search entries">
+        <select id="fTier" aria-label="Filter by coupon">
+          <option value="">All coupons</option>
+          <option value="20%">20% (10/10)</option>
+          <option value="15%">15% (8–9)</option>
+          <option value="10%">10% (5–7)</option>
+          <option value="5%">5% (0–4)</option>
+        </select>
+        <select id="fStatus" aria-label="Filter by status">
+          <option value="">Any status</option>
+          <option value="open">Not redeemed</option>
+          <option value="used">Redeemed</option>
+        </select>
+        <select id="fDate" aria-label="Filter by date">
+          <option value="">All time</option>
+          <option value="today">Today</option>
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+        </select>
+        <span class="count" id="rowCount"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Name</th><th>Mobile</th><th>Email</th><th>City</th><th>Interested in</th>
+              <th>Score</th><th>Time</th><th>Coupon</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="rows"><tr><td colspan="11" class="empty">Loading entries…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const cfg = window.QUIZ_CONFIG || {};
+  const configured = window.supabase && cfg.SUPABASE_URL && !/YOUR-/.test(cfg.SUPABASE_URL + cfg.SUPABASE_ANON_KEY);
+  // Read reset-link / Google-return details from the URL before the client consumes them.
+  const urlInfo = new URLSearchParams((location.hash || "").slice(1) + "&" + location.search.slice(1));
+  let recovering = urlInfo.get("type") === "recovery";
+  const urlError = urlInfo.get("error_description");
+  const sb = configured ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { storageKey: "ornomart-quiz-admin" } }) : null;
+  const backUrl = location.origin + location.pathname;
+
+  // Is the Google provider switched on in Supabase? (public auth settings endpoint)
+  const googleEnabled = sb ? fetch(cfg.SUPABASE_URL + "/auth/v1/settings", { headers: { apikey: cfg.SUPABASE_ANON_KEY } })
+    .then((r) => r.json()).then((j) => !!(j.external && j.external.google)).catch(() => false) : Promise.resolve(false);
+  let entered = false;
+  const DEMO = location.hash === "#demo";  // admin.html#demo shows example data without signing in
+
+  // Example rows for demo mode only (never saved anywhere).
+  function demoRows() {
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
+    const names = ["Priya Sharma", "Rahul Verma", "Anjali Mehta", "Vikram Singh", "Sneha Patel", "Arjun Nair", "Kavya Reddy", "Rohan Gupta", "Pooja Joshi", "Amit Kumar", "Neha Agarwal", "Karan Malhotra", "Divya Iyer", "Sanjay Rao", "Meera Pillai", "Aditya Jain"];
+    const cities = ["Jaipur", "Mumbai", "Delhi", "Ahmedabad", "Pune", "Surat", "Kolkata", "Chennai"];
+    const interests = ["Gold jewellery", "Diamond jewellery", "Silver jewellery", "Bridal set", "Gemstones", null];
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const rows = [];
+    for (let i = 0; i < 38; i++) {
+      const name = pick(names);
+      const score = Math.min(10, Math.max(1, Math.round(4 + rnd() * 5 + (rnd() > .85 ? 2 : 0))));
+      const discount = score === 10 ? "20%" : score >= 8 ? "15%" : score >= 5 ? "10%" : "5%";
+      let tail = ""; for (let k = 0; k < 5; k++) tail += chars[Math.floor(rnd() * chars.length)];
+      const created = new Date(Date.now() - rnd() * 34 * 864e5);
+      const timedOut = rnd() > .88;
+      rows.push({
+        id: "demo-" + i, created_at: created.toISOString(), name,
+        phone: "9" + String(Math.floor(rnd() * 1e9)).padStart(9, "0"),
+        email: name.toLowerCase().replace(" ", ".") + "@example.com",
+        city: pick(cities), interest: pick(interests), score, total: 10, discount,
+        coupon_code: "GEM" + discount.replace("%", "").padStart(2, "0") + "-" + tail,
+        timed_out: timedOut, time_taken_sec: timedOut ? 420 : Math.round(150 + rnd() * 250),
+        redeemed_at: rnd() > .62 ? new Date(created.getTime() + rnd() * 3 * 864e5).toISOString() : null,
+        user_id: rnd() > .55 ? "demo-user" : null
+      });
+    }
+    return rows.sort((x, y) => y.created_at.localeCompare(x.created_at));
+  }
+  const COUPON_DAYS = 30;
+  let all = [];
+
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmtDate = (iso) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+  const fmtTime = (s) => s == null ? "–" : Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  const isExpired = (r) => !r.redeemed_at && (Date.now() - new Date(r.created_at).getTime()) > COUPON_DAYS * 864e5;
+  const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+
+  // ---------- Auth ----------
+  const VIEWS = { signin: ["signInView", "Quiz Admin Login", "loginMsg"], forgot: ["forgotForm", "Reset Password", "forgotMsg"], newpass: ["newPassForm", "Set New Password", "newPassMsg"] };
+  function showAuth(view, msg, ok) {
+    $("dashView").hidden = true;
+    $("loginView").hidden = false;
+    $("wrap").classList.add("centered");
+    for (const k in VIEWS) $(VIEWS[k][0]).hidden = k !== view;
+    $("authTitle").textContent = VIEWS[view][1];
+    const m = $(VIEWS[view][2]);
+    m.textContent = msg || "";
+    m.className = "msg " + (ok ? "ok" : "err");
+  }
+  const showLogin = (msg) => showAuth("signin", msg);
+  const cleanUrl = () => history.replaceState(null, "", location.pathname);
+
+  async function enterDashboard(session) {
+    if (entered) return;
+    entered = true;
+    const { data: isAdmin, error } = await sb.rpc("is_quiz_admin");
+    if (error || !isAdmin) {
+      entered = false;
+      await sb.auth.signOut();
+      showLogin(error ? "Could not check admin access: " + error.message : session.user.email + " is not on the admin list. Ask the owner to add this email.");
+      return;
+    }
+    $("whoAmI").textContent = session.user.email;
+    $("loginView").hidden = true;
+    $("wrap").classList.remove("centered");
+    $("dashView").hidden = false;
+    load();
+  }
+
+  $("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!sb) return;
+    $("loginBtn").disabled = true;
+    $("loginMsg").textContent = "";
+    const { data, error } = await sb.auth.signInWithPassword({ email: $("loginEmail").value.trim(), password: $("loginPass").value });
+    $("loginBtn").disabled = false;
+    if (error) { $("loginMsg").textContent = error.message === "Invalid login credentials" ? "Email or password is incorrect." : error.message; return; }
+    $("loginPass").value = "";
+    enterDashboard(data.session);
+  });
+
+  // Google sign-in: Supabase sends the admin to Google and back to this page.
+  $("googleBtn").addEventListener("click", async () => {
+    if (!sb) return;
+    $("googleBtn").disabled = true;
+    if (!(await googleEnabled)) {
+      $("googleBtn").disabled = false;
+      showLogin("Google sign-in is not turned on yet. Enable the Google provider in Supabase, or sign in with email.");
+      return;
+    }
+    const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: backUrl } });
+    if (error) {
+      $("googleBtn").disabled = false;
+      showLogin(/not enabled|unsupported provider/i.test(error.message) ? "Google sign-in is not turned on yet. Enable the Google provider in Supabase." : error.message);
+    }
+  });
+
+  // Forgot password
+  $("forgotLink").addEventListener("click", () => { $("forgotEmail").value = $("loginEmail").value.trim(); showAuth("forgot"); $("forgotEmail").focus(); });
+  $("backToLogin").addEventListener("click", () => showAuth("signin"));
+  $("forgotForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!sb) return;
+    const email = $("forgotEmail").value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showAuth("forgot", "Please enter a valid email."); return; }
+    $("forgotBtn").disabled = true;
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: backUrl });
+    $("forgotBtn").disabled = false;
+    if (error) { showAuth("forgot", /rate limit|security purposes/i.test(error.message) ? "Too many requests. Please wait a minute and try again." : error.message); return; }
+    showAuth("forgot", "If " + email + " has an admin account, a reset link is on its way. Check your inbox and spam folder.", true);
+  });
+
+  // New password, after opening the reset link from the email
+  $("newPassForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const p1 = $("newPass").value, p2 = $("newPass2").value;
+    if (p1.length < 8) { showAuth("newpass", "Password must be at least 8 characters."); return; }
+    if (p1 !== p2) { showAuth("newpass", "The two passwords do not match."); return; }
+    $("newPassBtn").disabled = true;
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    $("newPassBtn").disabled = false;
+    if (error) { showAuth("newpass", error.message); return; }
+    $("newPass").value = $("newPass2").value = "";
+    recovering = false;
+    cleanUrl();
+    const { data: s } = await sb.auth.getSession();
+    if (s.session) enterDashboard(s.session); else showAuth("signin", "Password updated. Please sign in.", true);
+  });
+
+  // Show / hide password
+  document.querySelectorAll(".pw-toggle").forEach((btn) => btn.addEventListener("click", () => {
+    const input = $(btn.dataset.toggle);
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    btn.setAttribute("aria-pressed", String(show));
+    btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+    btn.querySelector(".i-show").hidden = show;
+    btn.querySelector(".i-hide").hidden = !show;
+    input.focus();
+  }));
+
+  $("logoutBtn").addEventListener("click", async () => { await sb.auth.signOut(); entered = false; all = []; showLogin(""); });
+
+  // ---------- Data ----------
+  async function load() {
+    if (DEMO) {
+      all = all.length ? all : demoRows();
+      $("updatedAt").textContent = "Demo data";
+      renderSummary();
+      renderTable();
+      return;
+    }
+    $("refreshBtn").disabled = true;
+    $("dashMsg").hidden = true;
+    const rows = [];
+    const PAGE = 1000;
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await sb.from("quiz_submissions").select("*").order("created_at", { ascending: false }).range(from, from + PAGE - 1);
+      if (error) { $("dashMsg").textContent = "Could not load entries: " + error.message; $("dashMsg").hidden = false; break; }
+      rows.push(...data);
+      if (data.length < PAGE) break;
+    }
+    all = rows;
+    $("refreshBtn").disabled = false;
+    $("updatedAt").textContent = "Updated " + new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
+    renderSummary();
+    renderTable();
+  }
+
+  function renderSummary() {
+    const n = all.length;
+    const today = all.filter((r) => new Date(r.created_at).getTime() >= startOfToday()).length;
+    const avg = n ? all.reduce((s, r) => s + r.score, 0) / n : 0;
+    const perfect = all.filter((r) => r.score === 10).length;
+    const redeemed = all.filter((r) => r.redeemed_at).length;
+    const timeouts = all.filter((r) => r.timed_out).length;
+    const timed = all.filter((r) => r.time_taken_sec != null);
+    const avgTime = timed.length ? Math.round(timed.reduce((s, r) => s + r.time_taken_sec, 0) / timed.length) : 0;
+    const pct = (a) => n ? Math.round(a / n * 100) : 0;
+
+    $("tTotal").textContent = n;
+    $("tToday").textContent = today + " today";
+    $("tAvg").textContent = avg.toFixed(1);
+    $("tPerfect").textContent = perfect;
+    $("tPerfectPct").textContent = pct(perfect) + "% of players";
+    $("tRedeemed").textContent = redeemed;
+    $("tRedeemedPct").textContent = pct(redeemed) + "% of coupons";
+    $("tTimeout").textContent = timeouts;
+    $("tAvgTime").textContent = "Avg time " + fmtTime(avgTime);
+
+    const counts = Array.from({ length: 11 }, (_, s) => all.filter((r) => r.score === s).length);
+    const max = Math.max(1, ...counts);
+    $("dist").innerHTML = counts.map((c) =>
+      `<div class="bar" title="${c} players"><span class="n">${c || ""}</span><span class="fill" style="height:${c ? Math.max(4, c / max * 100) : 0}%"></span></div>`).join("");
+    $("distX").innerHTML = counts.map((_, s) => `<span>${s}</span>`).join("");
+
+    const tiers = ["20%", "15%", "10%", "5%"].map((t) => ({ t, c: all.filter((r) => r.discount === t).length }));
+    const tmax = Math.max(1, ...tiers.map((x) => x.c));
+    $("tiers").innerHTML = tiers.map(({ t, c }) =>
+      `<div class="tier"><span class="lbl">${t}</span><span class="track"><span style="width:${c / tmax * 100}%"></span></span><span class="cnt">${c}</span></div>`).join("");
+  }
+
+  function filtered() {
+    const q = $("search").value.trim().toLowerCase();
+    const tier = $("fTier").value, status = $("fStatus").value, date = $("fDate").value;
+    const since = date === "today" ? startOfToday() : date ? Date.now() - Number(date) * 864e5 : 0;
+    return all.filter((r) =>
+      (!q || [r.name, r.phone, r.email, r.city, r.coupon_code, r.interest].some((v) => String(v || "").toLowerCase().includes(q))) &&
+      (!tier || r.discount === tier) &&
+      (!status || (status === "used" ? !!r.redeemed_at : !r.redeemed_at)) &&
+      (!since || new Date(r.created_at).getTime() >= since));
+  }
+
+  function statusPill(r) {
+    if (r.redeemed_at) return `<span class="pill used" title="${esc(fmtDate(r.redeemed_at))}">Redeemed</span>`;
+    if (isExpired(r)) return `<span class="pill late">Expired</span>`;
+    return `<span class="pill open">Not redeemed</span>`;
+  }
+
+  function renderTable() {
+    const list = filtered();
+    $("rowCount").textContent = list.length + " of " + all.length + " entries";
+    if (!list.length) {
+      $("rows").innerHTML = `<tr><td colspan="11" class="empty">${all.length ? "No entries match these filters." : "No quiz entries yet. They will appear here as soon as players submit the quiz."}</td></tr>`;
+      return;
+    }
+    $("rows").innerHTML = list.map((r) => `
+      <tr>
+        <td class="num">${esc(fmtDate(r.created_at))}</td>
+        <td>${esc(r.name)}${r.user_id ? '<span class="pill google">Google</span>' : ""}</td>
+        <td class="num">${esc(r.phone)}</td>
+        <td>${esc(r.email)}</td>
+        <td>${esc(r.city)}</td>
+        <td>${esc(r.interest || "–")}</td>
+        <td class="num score-cell">${r.score}/${r.total}</td>
+        <td class="num">${fmtTime(r.time_taken_sec)}${r.timed_out ? " ⏱" : ""}</td>
+        <td><span class="code">${esc(r.coupon_code)}</span> · ${esc(r.discount)}</td>
+        <td>${statusPill(r)}</td>
+        <td>${r.redeemed_at ? `<button type="button" class="btn-ghost btn-small" data-undo="${esc(r.id)}">Undo</button>`
+                            : `<button type="button" class="btn-primary btn-small" data-redeem="${esc(r.id)}">Mark redeemed</button>`}</td>
+      </tr>`).join("");
+  }
+
+  async function setRedeemed(id, value, btn) {
+    if (btn) btn.disabled = true;
+    const redeemed_at = value ? new Date().toISOString() : null;
+    const { error } = DEMO ? { error: null } : await sb.from("quiz_submissions").update({ redeemed_at }).eq("id", id);
+    if (error) { $("dashMsg").textContent = "Could not update coupon: " + error.message; $("dashMsg").hidden = false; if (btn) btn.disabled = false; return false; }
+    const row = all.find((r) => r.id === id);
+    if (row) row.redeemed_at = redeemed_at;
+    renderSummary();
+    renderTable();
+    return true;
+  }
+
+  $("rows").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.redeem) setRedeemed(b.dataset.redeem, true, b);
+    if (b.dataset.undo) setRedeemed(b.dataset.undo, false, b);
+  });
+
+  ["search", "fTier", "fStatus", "fDate"].forEach((id) => $(id).addEventListener("input", renderTable));
+  $("refreshBtn").addEventListener("click", load);
+
+  // ---------- Coupon lookup ----------
+  function showLookup() {
+    const code = $("lookupCode").value.trim().toUpperCase();
+    const box = $("lookupResult");
+    box.hidden = false;
+    const r = all.find((x) => x.coupon_code === code);
+    if (!r) { box.innerHTML = `<strong style="color:var(--bad)">No coupon found with code ${esc(code)}.</strong><span>Check the spelling, or press Refresh if the player just finished.</span>`; return; }
+    const expired = isExpired(r);
+    box.innerHTML = `
+      <div><span class="code">${esc(r.coupon_code)}</span> · <strong>${esc(r.discount)} off making charges</strong> ${statusPill(r)}</div>
+      <span>${esc(r.name)} · ${esc(r.phone)} · Score ${r.score}/${r.total}</span>
+      <span>Issued ${esc(fmtDate(r.created_at))}${r.redeemed_at ? " · Redeemed " + esc(fmtDate(r.redeemed_at)) : ""}</span>
+      ${!r.redeemed_at ? `<div><button type="button" class="btn-primary btn-small" id="lookupRedeem" ${expired ? "disabled" : ""}>Mark redeemed</button>${expired ? ' <span style="color:var(--bad)">Coupon expired (older than ' + COUPON_DAYS + ' days)</span>' : ""}</div>` : ""}`;
+    const btn = $("lookupRedeem");
+    if (btn) btn.addEventListener("click", async () => { if (await setRedeemed(r.id, true, btn)) showLookup(); });
+  }
+  $("lookupForm").addEventListener("submit", (e) => { e.preventDefault(); if ($("lookupCode").value.trim()) showLookup(); });
+
+  // ---------- CSV export ----------
+  $("exportBtn").addEventListener("click", () => {
+    const cols = ["created_at", "name", "phone", "email", "city", "interest", "score", "total", "time_taken_sec", "timed_out", "discount", "coupon_code", "redeemed_at"];
+    const cell = (v) => { const s = String(v ?? ""); return /[",\n]/.test(s) || /^[=+\-@]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const csv = [cols.join(","), ...filtered().map((r) => cols.map((c) => cell(r[c])).join(","))].join("\n");
+    const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: "ornomart-quiz-entries-" + new Date().toISOString().slice(0, 10) + ".csv" });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  // ---------- Start ----------
+  if (DEMO) {
+    $("loginView").hidden = true;
+    $("wrap").classList.remove("centered");
+    $("dashView").hidden = false;
+    $("demoBanner").hidden = false;
+    $("whoAmI").textContent = "Demo";
+    $("logoutBtn").textContent = "Exit Demo";
+    $("logoutBtn").onclick = () => { location.hash = ""; location.reload(); };
+    load();
+    return;
+  }
+  if (!sb) {
+    showLogin("Supabase is not set up yet. Add your Project URL and anon key in config.js.");
+    $("loginBtn").disabled = true;
+    $("googleBtn").disabled = true;
+    return;
+  }
+  if (urlError) { showLogin(/expired|invalid/i.test(urlError) ? "This link has expired or was already used. Please request a new one." : urlError); cleanUrl(); }
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY" || (recovering && session)) { recovering = true; showAuth("newpass"); return; }
+    if (session && (event === "INITIAL_SESSION" || event === "SIGNED_IN")) {
+      if (location.hash.includes("access_token")) cleanUrl();
+      setTimeout(() => enterDashboard(session), 0);
+    }
+  });
+})();
+</script>
+</body>
+</html>
