@@ -77,5 +77,35 @@ create policy "Admins can mark coupons redeemed"
   using ((select public.is_quiz_admin()))
   with check ((select public.is_quiz_admin()));
 
--- 5. Add the admin login email(s). Use the same email you create under Authentication > Users.
+-- 5. Players see only their own entries (My Coupons page): by mobile + email together, or by their Google account.
+create or replace function public.get_my_quiz_entries(p_phone text default null, p_email text default null)
+returns table (
+  created_at timestamptz, name text, score int, total int, discount text,
+  coupon_code text, timed_out boolean, time_taken_sec int, redeemed_at timestamptz
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select s.created_at, s.name, s.score, s.total, s.discount,
+         s.coupon_code, s.timed_out, s.time_taken_sec, s.redeemed_at
+  from public.quiz_submissions s
+  where (
+          p_phone is not null and p_email is not null
+          and s.phone = trim(p_phone)
+          and s.email = lower(trim(p_email))
+        )
+     or (
+          p_phone is null and p_email is null and auth.uid() is not null
+          and (s.user_id = auth.uid() or s.email = lower(coalesce(auth.jwt() ->> 'email', '')))
+        )
+  order by s.created_at desc
+  limit 100;
+$$;
+
+revoke all on function public.get_my_quiz_entries(text, text) from public;
+grant execute on function public.get_my_quiz_entries(text, text) to anon, authenticated;
+
+-- 6. Add the admin login email(s). Use the same email you create under Authentication > Users.
 -- insert into public.quiz_admins (email) values ('admin@example.com') on conflict do nothing;

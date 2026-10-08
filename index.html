@@ -235,6 +235,7 @@
 
     <div class="actions">
       <button type="button" class="btn-ghost" id="reviewBtn">Review Answers</button>
+      <a class="btn-primary" href="my.html" style="font-family:var(--font-display);letter-spacing:.04em;border-radius:999px;padding:12px 24px;font-weight:700;text-decoration:none">My Coupons</a>
     </div>
   </section>
 
@@ -487,6 +488,7 @@
       </div>`).join("");
 
     $("saveNote").hidden = true;
+    try { sessionStorage.setItem("ornomart-my", JSON.stringify({ phone: user.phone, email: user.email.toLowerCase() })); } catch (_) {}
     const taken = Math.min(TOTAL_SECONDS, Math.round(TOTAL_SECONDS - (endAt - Date.now()) / 1000));
     saveEntry({
       name: user.name, phone: user.phone, email: user.email.toLowerCase(), city: user.city,
