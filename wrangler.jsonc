@@ -1,0 +1,9 @@
+// Cloudflare Workers config: serves this folder as a static site.
+// (Cloudflare Pages ignores this file; there, use build output directory "/".)
+{
+  "name": "ornomart-quiz",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./"
+  }
+}
