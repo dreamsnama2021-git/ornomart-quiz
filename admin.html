@@ -249,7 +249,7 @@
     <section class="panel">
       <h2>All Entries</h2>
       <div class="filters">
-        <input type="search" id="search" placeholder="Search name, phone, email, city or coupon" aria-label="Search entries">
+        <input type="search" id="search" placeholder="Search name, mobile or coupon" aria-label="Search entries">
         <select id="fTier" aria-label="Filter by coupon">
           <option value="">All coupons</option>
           <option value="20%">20% (10/10)</option>
@@ -538,8 +538,8 @@
         <td class="num">${esc(fmtDate(r.created_at))}</td>
         <td>${esc(r.name)}${r.user_id ? '<span class="pill google">Google</span>' : ""}</td>
         <td class="num">${esc(r.phone)}</td>
-        <td>${esc(r.email)}</td>
-        <td>${esc(r.city)}</td>
+        <td>${esc(r.email || "–")}</td>
+        <td>${esc(r.city || "–")}</td>
         <td>${esc(r.interest || "–")}</td>
         <td class="num score-cell">${r.score}/${r.total}</td>
         <td class="num">${fmtTime(r.time_taken_sec)}${r.timed_out ? " ⏱" : ""}</td>

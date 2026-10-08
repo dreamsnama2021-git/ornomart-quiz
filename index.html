@@ -163,30 +163,8 @@
           <input id="phone" name="phone" inputmode="numeric" maxlength="10" autocomplete="tel" placeholder="10 digit number">
           <span class="err" id="err-phone"></span>
         </div>
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com">
-          <span class="err" id="err-email"></span>
-        </div>
-        <div class="field">
-          <label for="city">City</label>
-          <input id="city" name="city" autocomplete="address-level2" placeholder="e.g. Jaipur">
-          <span class="err" id="err-city"></span>
-        </div>
-        <div class="field full">
-          <label for="interest">What would you like to buy? <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-          <select id="interest" name="interest">
-            <option value="">Select an option</option>
-            <option>Gold jewellery</option>
-            <option>Diamond jewellery</option>
-            <option>Silver jewellery</option>
-            <option>Bridal set</option>
-            <option>Gemstones</option>
-          </select>
-          <span class="err" id="err-interest"></span>
-        </div>
       </div>
-      <div class="actions" style="margin-top:16px">
+      <div class="actions" style="margin-top:16px;justify-content:center">
         <button type="submit" class="btn-primary">Submit &amp; Start Quiz</button>
       </div>
     </form>
@@ -289,7 +267,8 @@
     ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { storageKey: "ornomart-quiz-player" } })
     : null;
 
-  // Optional Google sign-in for players: fills in name and email.
+  // Optional Google sign-in for players: fills in the name and keeps the Google email with the entry.
+  let googleEmail = null;
   const urlInfo = new URLSearchParams((location.hash || "").slice(1) + "&" + location.search.slice(1));
   let googleOn = false;
 // Is the Google provider switched on in Supabase? (public auth settings endpoint)
@@ -301,13 +280,12 @@
     const signedIn = !!u;
     $("googleBox").hidden = signedIn || !sb || !googleOn;
     $("signedIn").hidden = !signedIn;
-    $("email").readOnly = signedIn;
+    googleEmail = signedIn ? (u.email || null) : null;
     if (!signedIn) return;
     const meta = u.user_metadata || {};
     const fullName = meta.full_name || meta.name || "";
     $("signedInText").textContent = "Signed in with Google as " + (fullName ? fullName + " (" + u.email + ")" : u.email);
     if (!$("name").value.trim() && fullName) $("name").value = fullName;
-    $("email").value = u.email || "";
     showGoogleError("");
   }
 
@@ -322,7 +300,7 @@
     });
     $("googleOut").addEventListener("click", async () => {
       await sb.auth.signOut();
-      $("name").value = ""; $("email").value = "";
+      $("name").value = "";
       applyGoogleUser(null);
     });
     let currentUser = null;
@@ -363,17 +341,11 @@
     e.preventDefault();
     const v = {
       name: $("name").value.trim(),
-      phone: $("phone").value.trim(),
-      email: $("email").value.trim(),
-      city: $("city").value.trim(),
-      interest: $("interest").value
+      phone: $("phone").value.trim()
     };
     const errs = {
       name: v.name.length < 2 ? "Please enter your name." : "",
-      phone: /^[6-9]\d{9}$/.test(v.phone) ? "" : "Please enter a valid 10-digit mobile number.",
-      email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email) ? "" : "Please enter a valid email, e.g. name@example.com",
-      city: v.city ? "" : "Please enter your city.",
-      interest: ""
+      phone: /^[6-9]\d{9}$/.test(v.phone) ? "" : "Please enter a valid 10-digit mobile number."
     };
     let ok = true;
     for (const k in errs) { $("err-" + k).textContent = errs[k]; if (errs[k]) ok = false; }
@@ -488,11 +460,10 @@
       </div>`).join("");
 
     $("saveNote").hidden = true;
-    try { sessionStorage.setItem("ornomart-my", JSON.stringify({ phone: user.phone, email: user.email.toLowerCase() })); } catch (_) {}
+    try { sessionStorage.setItem("ornomart-my", JSON.stringify({ phone: user.phone, name: user.name })); } catch (_) {}
     const taken = Math.min(TOTAL_SECONDS, Math.round(TOTAL_SECONDS - (endAt - Date.now()) / 1000));
     saveEntry({
-      name: user.name, phone: user.phone, email: user.email.toLowerCase(), city: user.city,
-      interest: user.interest || null, score, total: COUNT, discount: c.off.split(" ")[0],
+      name: user.name, phone: user.phone, email: googleEmail ? googleEmail.toLowerCase() : null, score, total: COUNT, discount: c.off.split(" ")[0],
       coupon_code: code, timed_out: timedOut, time_taken_sec: Math.max(0, taken)
     }).then((ok) => { $("saveNote").hidden = ok; });
 

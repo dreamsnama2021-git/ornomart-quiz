@@ -7,8 +7,8 @@ create table if not exists public.quiz_submissions (
   created_at     timestamptz not null default now(),
   name           text not null check (char_length(name) between 2 and 100),
   phone          text not null check (phone ~ '^[6-9][0-9]{9}$'),
-  email          text not null check (char_length(email) between 5 and 200 and email like '%@%.%'),
-  city           text not null check (char_length(city) between 1 and 100),
+  email          text check (char_length(email) between 5 and 200 and email like '%@%.%'),  -- only from Google sign-in
+  city           text check (char_length(city) between 1 and 100),                             -- no longer asked
   interest       text check (interest is null or char_length(interest) <= 100),
   score          int  not null check (score between 0 and 10),
   total          int  not null default 10 check (total = 10),
@@ -77,8 +77,8 @@ create policy "Admins can mark coupons redeemed"
   using ((select public.is_quiz_admin()))
   with check ((select public.is_quiz_admin()));
 
--- 5. Players see only their own entries (My Coupons page): by mobile + email together, or by their Google account.
-create or replace function public.get_my_quiz_entries(p_phone text default null, p_email text default null)
+-- 5. Players see only their own entries (My Coupons page): by mobile + name together, or by their Google account.
+create or replace function public.get_my_quiz_entries(p_phone text default null, p_name text default null)
 returns table (
   created_at timestamptz, name text, score int, total int, discount text,
   coupon_code text, timed_out boolean, time_taken_sec int, redeemed_at timestamptz
@@ -92,12 +92,12 @@ as $$
          s.coupon_code, s.timed_out, s.time_taken_sec, s.redeemed_at
   from public.quiz_submissions s
   where (
-          p_phone is not null and p_email is not null
+          p_phone is not null and p_name is not null
           and s.phone = trim(p_phone)
-          and s.email = lower(trim(p_email))
+          and lower(regexp_replace(trim(s.name), '\s+', ' ', 'g')) = lower(regexp_replace(trim(p_name), '\s+', ' ', 'g'))
         )
      or (
-          p_phone is null and p_email is null and auth.uid() is not null
+          p_phone is null and p_name is null and auth.uid() is not null
           and (s.user_id = auth.uid() or s.email = lower(coalesce(auth.jwt() ->> 'email', '')))
         )
   order by s.created_at desc
