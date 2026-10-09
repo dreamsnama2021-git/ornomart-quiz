@@ -137,7 +137,7 @@
     <img class="logo" src="logo.png" alt="Ornomart" width="560" height="372">
     <span class="eyebrow">You Imagine It. We Create It.</span>
     <h1>THE SPARKLING QUIZ</h1>
-    <p class="lede">10 Unique Questions, Fun & Exciting Rewards! Every participant gets a coupon. How big will yours be? Ready to shine?</p>
+    <p class="lede" id="lede">10 Unique Questions, Fun & Exciting Rewards! Every participant gets a coupon. How big will yours be? Ready to shine?</p>
     <div class="facts">
       <span class="chip">10 MCQ</span>
       <span class="chip">Coupon for every player</span>
@@ -361,6 +361,8 @@
 
   // Step 2: quiz
   function startQuiz() {
+    // After the player submits their details, the banner switches to the quiz message.
+    $("lede").textContent = "Let’s See How Well You Sparkle!";
     finished = false;
     picked = shuffle(BANK).slice(0, COUNT).map((item) => {
       const order = shuffle(item.o.map((_, i) => i));
