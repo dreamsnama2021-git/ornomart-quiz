@@ -61,6 +61,8 @@
   #step-form input:focus { background: var(--surface); border-color: var(--gold); }
   .req { color: var(--bad); }
   #step-form .err:empty { display: none; }
+  .played-note { margin-top: 14px; display: flex; flex-direction: column; gap: 4px; align-items: center; text-align: center; background: var(--sapphire-soft); border-radius: 12px; padding: 14px; font-size: 14px; }
+  .played-note a { color: var(--sapphire); font-weight: 700; }
   .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
   .field.full { grid-column: 1 / -1; }
   label { font-family: var(--font-display); font-size: 13px; font-weight: 600; letter-spacing: .03em; }
@@ -171,6 +173,11 @@
           <input id="phone" name="phone" inputmode="numeric" maxlength="10" autocomplete="tel" placeholder="10 digit number">
           <span class="err" id="err-phone"></span>
         </div>
+      </div>
+      <div class="played-note" id="playedNote" hidden>
+        <strong>This mobile number has already played.</strong>
+        <span>Each mobile number can play the quiz only once.</span>
+        <a href="my.html">See my coupon</a>
       </div>
       <div class="actions" style="margin-top:16px;justify-content:center">
         <button type="submit" class="btn-primary">START MY QUIZ</button>
@@ -335,6 +342,7 @@
       const { error } = await sb.from("quiz_submissions").insert(row);
       if (!error) return true;
       console.error("Saving entry failed:", error.message);
+      if (/already played/i.test(error.message)) return "played";
     }
     return false;
   }
@@ -346,9 +354,10 @@
   }
 
   // Step 1: validate and start
+  $("phone").addEventListener("input", (e) => { $("playedNote").hidden = true; });
   $("phone").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10); });
 
-  $("userForm").addEventListener("submit", (e) => {
+  $("userForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const v = {
       name: $("name").value.trim(),
@@ -361,6 +370,18 @@
     let ok = true;
     for (const k in errs) { $("err-" + k).textContent = errs[k]; if (errs[k]) ok = false; }
     if (!ok) return;
+    $("playedNote").hidden = true;
+    if (sb) {
+      const btn = e.submitter || $("userForm").querySelector("button[type=submit]");
+      btn.disabled = true;
+      const { data: played, error } = await sb.rpc("quiz_phone_has_played", { p_phone: v.phone });
+      btn.disabled = false;
+      if (!error && played) {
+        try { sessionStorage.setItem("ornomart-my", JSON.stringify({ phone: v.phone, name: v.name })); } catch (_) {}
+        $("playedNote").hidden = false;
+        return;
+      }
+    }
     user = v;
     startQuiz();
   });
@@ -481,7 +502,10 @@
     saveEntry({
       name: user.name, phone: user.phone, email: googleEmail ? googleEmail.toLowerCase() : null, score, total: COUNT, discount: c.off.split(" ")[0],
       coupon_code: code, timed_out: timedOut, time_taken_sec: Math.max(0, taken)
-    }).then((ok) => { $("saveNote").hidden = ok; });
+    }).then((ok) => {
+      if (ok === "played") $("saveNote").textContent = "This mobile number has already played, so this coupon was not saved. Each number can play only once.";
+      $("saveNote").hidden = ok === true;
+    });
 
     $("step-quiz").hidden = true;
     $("step-result").hidden = false;

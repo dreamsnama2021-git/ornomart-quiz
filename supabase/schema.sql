@@ -114,5 +114,42 @@ $$;
 revoke all on function public.get_my_quiz_entries(text, text) from public;
 grant execute on function public.get_my_quiz_entries(text, text) to anon, authenticated;
 
--- 6. Add the admin login email(s). Use the same email you create under Authentication > Users.
+-- 6. Each mobile number can play the quiz only once.
+create or replace function public.quiz_one_play_per_phone()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform pg_advisory_xact_lock(hashtext('quiz_phone:' || new.phone));
+  if exists (select 1 from public.quiz_submissions where phone = new.phone) then
+    raise exception 'This mobile number has already played the quiz' using errcode = '23505';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.quiz_one_play_per_phone() from public, anon, authenticated;
+
+drop trigger if exists quiz_one_play_per_phone on public.quiz_submissions;
+create trigger quiz_one_play_per_phone
+  before insert on public.quiz_submissions
+  for each row execute function public.quiz_one_play_per_phone();
+
+-- Lets the quiz check a number before the 7-minute timer starts.
+create or replace function public.quiz_phone_has_played(p_phone text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from public.quiz_submissions where phone = trim(p_phone));
+$$;
+
+revoke all on function public.quiz_phone_has_played(text) from public;
+grant execute on function public.quiz_phone_has_played(text) to anon, authenticated;
+
+-- 7. Add the admin login email(s). Use the same email you create under Authentication > Users.
 -- insert into public.quiz_admins (email) values ('admin@example.com') on conflict do nothing;
