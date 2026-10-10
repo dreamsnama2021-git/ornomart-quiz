@@ -239,7 +239,7 @@
         <div class="tiers" id="tiers"></div>
         <h2 style="margin-top:6px">Check a Coupon</h2>
         <form class="lookup" id="lookupForm">
-          <input id="lookupCode" placeholder="e.g. GEM15-AB3CD" aria-label="Coupon code" autocomplete="off">
+          <input id="lookupCode" placeholder="e.g. GEM07-AB3CD" aria-label="Coupon code" autocomplete="off">
           <button type="submit" class="btn-primary btn-small">Check</button>
         </form>
         <div class="lookup-result" id="lookupResult" hidden></div>
@@ -252,10 +252,6 @@
         <input type="search" id="search" placeholder="Search name, mobile or coupon" aria-label="Search entries">
         <select id="fTier" aria-label="Filter by coupon">
           <option value="">All coupons</option>
-          <option value="20%">20% (10/10)</option>
-          <option value="15%">15% (8–9)</option>
-          <option value="10%">10% (5–7)</option>
-          <option value="5%">5% (0–4)</option>
         </select>
         <select id="fStatus" aria-label="Filter by status">
           <option value="">Any status</option>
@@ -318,7 +314,7 @@
     for (let i = 0; i < 38; i++) {
       const name = pick(names);
       const score = Math.min(10, Math.max(1, Math.round(4 + rnd() * 5 + (rnd() > .85 ? 2 : 0))));
-      const discount = score === 10 ? "20%" : score >= 8 ? "15%" : score >= 5 ? "10%" : "5%";
+      const discount = Math.max(1, score) + "%";
       let tail = ""; for (let k = 0; k < 5; k++) tail += chars[Math.floor(rnd() * chars.length)];
       const created = new Date(Date.now() - rnd() * 34 * 864e5);
       const timedOut = rnd() > .88;
@@ -503,7 +499,13 @@
       `<div class="bar" title="${c} players"><span class="n">${c || ""}</span><span class="fill" style="height:${c ? Math.max(4, c / max * 100) : 0}%"></span></div>`).join("");
     $("distX").innerHTML = counts.map((_, s) => `<span>${s}</span>`).join("");
 
-    const tiers = ["20%", "15%", "10%", "5%"].map((t) => ({ t, c: all.filter((r) => r.discount === t).length }));
+    // Discounts actually issued, highest first (1%-10% per score; older coupons may be 15% or 20%).
+    const pctOf = (d) => parseInt(d, 10) || 0;
+    const issued = [...new Set(all.map((r) => r.discount))].sort((x, y) => pctOf(y) - pctOf(x));
+    const tiers = issued.map((t) => ({ t, c: all.filter((r) => r.discount === t).length }));
+    const sel = $("fTier"), keep = sel.value;
+    sel.innerHTML = '<option value="">All coupons</option>' + issued.map((t) => `<option value="${esc(t)}">${esc(t)} off</option>`).join("");
+    sel.value = issued.includes(keep) ? keep : "";
     const tmax = Math.max(1, ...tiers.map((x) => x.c));
     $("tiers").innerHTML = tiers.map(({ t, c }) =>
       `<div class="tier"><span class="lbl">${t}</span><span class="track"><span style="width:${c / tmax * 100}%"></span></span><span class="cnt">${c}</span></div>`).join("");
@@ -581,7 +583,7 @@
     if (!r) { box.innerHTML = `<strong style="color:var(--bad)">No coupon found with code ${esc(code)}.</strong><span>Check the spelling, or press Refresh if the player just finished.</span>`; return; }
     const expired = isExpired(r);
     box.innerHTML = `
-      <div><span class="code">${esc(r.coupon_code)}</span> · <strong>${esc(r.discount)} off making charges</strong> ${statusPill(r)}</div>
+      <div><span class="code">${esc(r.coupon_code)}</span> · <strong>${esc(r.discount)} off diamond price &amp; making charges</strong> ${statusPill(r)}</div>
       <span>${esc(r.name)} · ${esc(r.phone)} · Score ${r.score}/${r.total}</span>
       <span>Issued ${esc(fmtDate(r.created_at))}${r.redeemed_at ? " · Redeemed " + esc(fmtDate(r.redeemed_at)) : ""}</span>
       ${!r.redeemed_at ? `<div><button type="button" class="btn-primary btn-small" id="lookupRedeem" ${expired ? "disabled" : ""}>Mark redeemed</button>${expired ? ' <span style="color:var(--bad)">Coupon expired (older than ' + COUPON_DAYS + ' days)</span>' : ""}</div>` : ""}`;

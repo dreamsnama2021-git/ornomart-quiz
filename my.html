@@ -203,7 +203,7 @@
           <div class="off"><strong>${esc(r.discount)}</strong><span>Off</span></div>
           <div class="body">
             <div class="row"><span class="code" id="code${i}">${esc(r.coupon_code)}</span><span class="pill ${st}">${label[st]}</span></div>
-            <span class="meta">On making charges · ${esc(when)}</span>
+            <span class="meta">Off on diamond price &amp; making charges · ${esc(when)}</span>
             <span class="meta">Quiz on ${esc(fmtDate(r.created_at))} · Score ${r.score}/${r.total}${r.timed_out ? " · Time ran out" : ""}</span>
             ${st === "active" ? `<div><button type="button" class="btn btn-ghost btn-small" data-copy="${i}">Copy Code</button></div>` : ""}
           </div>

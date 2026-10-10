@@ -125,6 +125,9 @@
   .coupon > * { position: relative; z-index: 1; }
   .code { font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: .12em; padding: 8px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; user-select: all; }
   .fine { font-size: 12.5px; color: var(--muted); margin: 0; }
+  .coupon-points { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+  .coupon-points li { display: flex; align-items: baseline; gap: 8px; }
+  .coupon-points li::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 2px; transform: rotate(45deg) translateY(-1px); background: var(--gold); }
   .timeout-note { font-size: 13px; font-weight: 600; color: var(--bad); margin: 0; }
 
   @media (prefers-reduced-motion: reduce) { .meter > span { transition: none; } }
@@ -208,7 +211,10 @@
     <div class="coupon">
       <span class="eyebrow">Your Coupon</span>
       <span class="off" id="couponOff">5% OFF</span>
-      <span id="couponOn">On making charges</span>
+      <ul class="coupon-points">
+        <li id="couponBasis">Discount as per your score</li>
+        <li>Off on diamond price &amp; making charges</li>
+      </ul>
       <div class="code-row">
         <span class="code" id="couponCode">GEM-0000</span>
         <button type="button" class="btn-ghost" id="copyBtn">Copy Code</button>
@@ -421,11 +427,14 @@
   });
 
   // Step 3: score + coupon
+  // 1% off for every correct answer (max 10%); every player gets at least 1%.
   function couponFor(score) {
-    if (score === 10) return { off: "20% OFF", on: "On making charges", prefix: "GEM20" };
-    if (score >= 8)  return { off: "15% OFF", on: "On making charges", prefix: "GEM15" };
-    if (score >= 5)  return { off: "10% OFF", on: "On making charges", prefix: "GEM10" };
-    return { off: "5% OFF", on: "On making charges", prefix: "GEM05" };
+    const pct = Math.max(1, score);
+    return {
+      off: pct + "% OFF",
+      basis: score > 0 ? score + " of " + COUNT + " correct = " + pct + "% off, as per your score" : "1% off for taking part",
+      prefix: "GEM" + String(pct).padStart(2, "0")
+    };
   }
 
   function finish(timedOut) {
@@ -447,7 +456,7 @@
       score >= 5 ? "Good effort! A little more and you will hit full marks." :
       "Thanks for playing. Here is a coupon for you too.";
     $("couponOff").textContent = c.off;
-    $("couponOn").textContent = c.on;
+    $("couponBasis").textContent = c.basis;
     $("couponCode").textContent = code;
     $("couponFine").textContent = "For " + user.name + " · Valid till " + valid + " · Show this code at the store.";
     $("timeoutNote").hidden = !timedOut;
