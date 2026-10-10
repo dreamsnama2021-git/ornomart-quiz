@@ -249,31 +249,38 @@
   const COUNT = 10;
 
   // Question bank: 10 random questions are picked for each player. `a` = index of correct option.
+  // Average difficulty: everyday jewellery knowledge a regular customer can answer.
   const BANK = [
     { q: "What is the purity of 22 karat (22K) gold?", o: ["75%", "91.6%", "99.9%", "58.5%"], a: 1 },
-    { q: "How much pure gold does 18 karat (18K) gold contain?", o: ["75%", "83.3%", "91.6%", "62%"], a: 0 },
+    { q: "Which is the purest form of gold?", o: ["18K", "22K", "24K", "14K"], a: 2 },
+    { q: "What does 'karat' (K) tell you about gold?", o: ["Its purity", "Its weight", "Its colour", "Its age"], a: 0 },
+    { q: "What does 'carat' measure for a diamond?", o: ["Weight", "Colour", "Shape", "Price"], a: 0 },
+    { q: "What is a 'hallmark' on gold jewellery?", o: ["A certified purity mark", "A brand logo", "A price tag", "A design pattern"], a: 0 },
     { q: "Which organisation certifies gold hallmarking in India?", o: ["RBI", "BIS", "SEBI", "FSSAI"], a: 1 },
-    { q: "How many characters are in the HUID code on hallmarked gold?", o: ["4", "6", "8", "12"], a: 1 },
     { q: "Which of these is NOT one of the '4 Cs' of a diamond?", o: ["Cut", "Clarity", "Carat", "Cost"], a: 3 },
-    { q: "How much does a 1 carat diamond weigh?", o: ["100 mg", "200 mg", "500 mg", "1 gram"], a: 1 },
     { q: "Which is the hardest natural material on the Mohs scale?", o: ["Ruby", "Sapphire", "Diamond", "Quartz"], a: 2 },
-    { q: "Ruby is a variety of which mineral?", o: ["Beryl", "Corundum", "Quartz", "Topaz"], a: 1 },
-    { q: "Emerald belongs to which mineral family?", o: ["Beryl", "Corundum", "Garnet", "Feldspar"], a: 0 },
-    { q: "What does the 'Pt950' mark on platinum jewellery mean?", o: ["950 grams", "95% platinum", "9.5% platinum", "950 rupees per gram"], a: 1 },
+    { q: "Which gemstone is famous for its deep red colour?", o: ["Ruby", "Emerald", "Topaz", "Diamond"], a: 0 },
+    { q: "Which gemstone is known for its rich green colour?", o: ["Ruby", "Emerald", "Sapphire", "Pearl"], a: 1 },
+    { q: "Which gemstone is usually blue?", o: ["Sapphire", "Ruby", "Emerald", "Pearl"], a: 0 },
     { q: "What is the purity of sterling silver?", o: ["99.9%", "92.5%", "85%", "80%"], a: 1 },
     { q: "Which metal gives rose gold its pink colour?", o: ["Silver", "Copper", "Zinc", "Nickel"], a: 1 },
+    { q: "Which of these is NOT a precious metal?", o: ["Gold", "Silver", "Platinum", "Iron"], a: 3 },
     { q: "Kundan jewellery is mainly associated with which state?", o: ["Kerala", "Rajasthan", "Assam", "Punjab"], a: 1 },
     { q: "Temple jewellery traditionally comes from which region?", o: ["South India", "North-East", "Kashmir", "Gujarat"], a: 0 },
     { q: "What kind of diamonds are used in Polki jewellery?", o: ["Lab-grown", "Uncut natural diamonds", "Coloured", "Artificial"], a: 1 },
     { q: "What is the birthstone for April?", o: ["Emerald", "Ruby", "Diamond", "Pearl"], a: 2 },
     { q: "How is a natural pearl formed?", o: ["Mined from the earth", "Inside an oyster or mollusc", "From volcanic lava", "From tree sap"], a: 1 },
-    { q: "What does the diamond clarity grade 'VVS' stand for?", o: ["Very Very Slightly Included", "Very Valuable Stone", "Visible Very Small", "Very Vivid Shine"], a: 0 },
     { q: "Which statement about lab-grown and natural diamonds is true?", o: ["Lab-grown diamonds are glass", "Both are chemically the same (carbon)", "Lab-grown diamonds are harder", "Natural diamonds are plastic"], a: 1 },
     { q: "What does a 'solitaire' ring mean?", o: ["Many small stones", "A single main diamond", "A ring without stones", "Two-tone gold"], a: 1 },
     { q: "What are 'making charges' on a jewellery bill for?", o: ["GST", "Craftsmanship and design cost", "Gold rate", "Packing"], a: 1 },
     { q: "In which unit is the gold rate usually quoted in India?", o: ["Per kg", "Per 10 grams", "Per ounce", "Per tola only"], a: 1 },
     { q: "How many gemstones are in Navratna jewellery?", o: ["5", "7", "9", "12"], a: 2 },
-    { q: "Which of these days is considered auspicious for buying gold?", o: ["Akshaya Tritiya", "Holi", "Lohri", "Makar Sankranti"], a: 0 }
+    { q: "Which of these days is considered auspicious for buying gold?", o: ["Akshaya Tritiya", "Holi", "Lohri", "Makar Sankranti"], a: 0 },
+    { q: "Jhumka is a type of which jewellery?", o: ["Earring", "Necklace", "Bangle", "Ring"], a: 0 },
+    { q: "Which jewellery is worn on the ankle?", o: ["Payal (anklet)", "Nath", "Maang tikka", "Jhumka"], a: 0 },
+    { q: "A 'Nath' is worn on which part of the body?", o: ["Nose", "Ear", "Wrist", "Ankle"], a: 0 },
+    { q: "Which metal is most used in traditional Indian bridal jewellery?", o: ["Gold", "Copper", "Aluminium", "Iron"], a: 0 },
+    { q: "A Mangalsutra is traditionally a symbol of what?", o: ["Marriage", "Birthday", "Graduation", "Friendship"], a: 0 }
   ];
 
   const $ = (id) => document.getElementById(id);
