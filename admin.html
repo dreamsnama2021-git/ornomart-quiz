@@ -499,7 +499,7 @@
       `<div class="bar" title="${c} players"><span class="n">${c || ""}</span><span class="fill" style="height:${c ? Math.max(4, c / max * 100) : 0}%"></span></div>`).join("");
     $("distX").innerHTML = counts.map((_, s) => `<span>${s}</span>`).join("");
 
-    // Discounts actually issued, highest first (1%-10% per score; older coupons may be 15% or 20%).
+    // Discounts actually issued (1% per correct answer, max 10%), highest first.
     const pctOf = (d) => parseInt(d, 10) || 0;
     const issued = [...new Set(all.map((r) => r.discount))].sort((x, y) => pctOf(y) - pctOf(x));
     const tiers = issued.map((t) => ({ t, c: all.filter((r) => r.discount === t).length }));

@@ -12,20 +12,20 @@ create table if not exists public.quiz_submissions (
   interest       text check (interest is null or char_length(interest) <= 100),
   score          int  not null check (score between 0 and 10),
   total          int  not null default 10 check (total = 10),
-  discount       text not null check (discount ~ '^([1-9]|10|15|20)%$'),  -- 1% per correct answer; 15%/20% only on early coupons
-  coupon_code    text not null unique check (coupon_code ~ '^GEM(0[1-9]|10|15|20)-[A-Z0-9]{5}$'),
+  discount       text not null check (discount ~ '^([1-9]|10)%$'),  -- 1% per correct answer, max 10%
+  coupon_code    text not null unique check (coupon_code ~ '^GEM(0[1-9]|10)-[A-Z0-9]{5}$'),
   timed_out      boolean not null default false,
   time_taken_sec int check (time_taken_sec between 0 and 420),
   redeemed_at    timestamptz,
   user_id        uuid default auth.uid() references auth.users(id) on delete set null  -- set when the player signed in with Google
 );
 
--- New entries: discount must equal the score (minimum 1%) and the code prefix must match.
+-- Discount must equal the score (minimum 1%) and the code prefix must match.
 alter table public.quiz_submissions drop constraint if exists quiz_submissions_discount_matches_score;
 alter table public.quiz_submissions
   add constraint quiz_submissions_discount_matches_score
   check (discount = greatest(score, 1)::text || '%'
-         and substring(coupon_code from 4 for 2)::int = greatest(score, 1)) not valid;
+         and substring(coupon_code from 4 for 2)::int = greatest(score, 1));
 
 create index if not exists quiz_submissions_created_at_idx on public.quiz_submissions (created_at desc);
 create index if not exists quiz_submissions_phone_idx on public.quiz_submissions (phone);
