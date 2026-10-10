@@ -49,6 +49,10 @@
   .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: var(--surface); }
   .btn-ghost { background: var(--surface); color: var(--primary); border-color: var(--line); }
   .btn-small { padding: 5px 12px; font-size: 12.5px; }
+  .btn-danger { background: var(--surface); color: var(--bad); border-color: var(--bad-soft); }
+  .btn-danger:hover { background: var(--bad-soft); }
+  .btn-danger.confirm { background: var(--bad); color: var(--surface); border-color: var(--bad); }
+  .row-actions { display: flex; gap: 6px; }
   button:disabled { opacity: .55; cursor: default; }
   input, select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -547,8 +551,9 @@
         <td class="num">${fmtTime(r.time_taken_sec)}${r.timed_out ? " ⏱" : ""}</td>
         <td><span class="code">${esc(r.coupon_code)}</span> · ${esc(r.discount)}</td>
         <td>${statusPill(r)}</td>
-        <td>${r.redeemed_at ? `<button type="button" class="btn-ghost btn-small" data-undo="${esc(r.id)}">Undo</button>`
-                            : `<button type="button" class="btn-primary btn-small" data-redeem="${esc(r.id)}">Mark redeemed</button>`}</td>
+        <td><div class="row-actions">${r.redeemed_at ? `<button type="button" class="btn-ghost btn-small" data-undo="${esc(r.id)}">Undo</button>`
+                            : `<button type="button" class="btn-primary btn-small" data-redeem="${esc(r.id)}">Mark redeemed</button>`}
+          <button type="button" class="btn-danger btn-small" data-delete="${esc(r.id)}" aria-label="Delete entry for ${esc(r.name)}">Delete</button></div></td>
       </tr>`).join("");
   }
 
@@ -564,9 +569,35 @@
     return true;
   }
 
+  // Delete: first click asks to confirm, second click (within 4 seconds) deletes for good.
+  async function deleteEntry(id, btn) {
+    if (!btn.classList.contains("confirm")) {
+      btn.classList.add("confirm");
+      btn.textContent = "Confirm delete";
+      clearTimeout(btn._reset);
+      btn._reset = setTimeout(() => { btn.classList.remove("confirm"); btn.textContent = "Delete"; }, 4000);
+      return;
+    }
+    clearTimeout(btn._reset);
+    btn.disabled = true;
+    btn.textContent = "Deleting…";
+    const { error } = DEMO ? { error: null } : await sb.from("quiz_submissions").delete().eq("id", id);
+    if (error) {
+      $("dashMsg").textContent = "Could not delete entry: " + error.message;
+      $("dashMsg").hidden = false;
+      btn.disabled = false; btn.classList.remove("confirm"); btn.textContent = "Delete";
+      return;
+    }
+    all = all.filter((r) => r.id !== id);
+    $("lookupResult").hidden = true;
+    renderSummary();
+    renderTable();
+  }
+
   $("rows").addEventListener("click", (e) => {
     const b = e.target.closest("button");
     if (!b) return;
+    if (b.dataset.delete) { deleteEntry(b.dataset.delete, b); return; }
     if (b.dataset.redeem) setRedeemed(b.dataset.redeem, true, b);
     if (b.dataset.undo) setRedeemed(b.dataset.undo, false, b);
   });

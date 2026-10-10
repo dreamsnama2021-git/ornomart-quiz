@@ -84,6 +84,14 @@ create policy "Admins can mark coupons redeemed"
   using ((select public.is_quiz_admin()))
   with check ((select public.is_quiz_admin()));
 
+grant delete on public.quiz_submissions to authenticated;
+
+drop policy if exists "Admins can delete entries" on public.quiz_submissions;
+create policy "Admins can delete entries"
+  on public.quiz_submissions for delete
+  to authenticated
+  using ((select public.is_quiz_admin()));
+
 -- 5. Players see only their own entries (My Coupons page): by mobile + name together, or by their Google account.
 create or replace function public.get_my_quiz_entries(p_phone text default null, p_name text default null)
 returns table (
