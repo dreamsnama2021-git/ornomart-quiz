@@ -53,6 +53,8 @@
   .btn-danger:hover { background: var(--bad-soft); }
   .btn-danger.confirm { background: var(--bad); color: var(--surface); border-color: var(--bad); }
   .row-actions { display: flex; gap: 6px; }
+  .pw-panel { max-width: 420px; }
+  .pw-panel form { display: flex; flex-direction: column; gap: 12px; }
   button:disabled { opacity: .55; cursor: default; }
   input, select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -214,10 +216,36 @@
       <span class="who" id="whoAmI"></span>
       <button type="button" class="btn-ghost" id="refreshBtn">Refresh</button>
       <button type="button" class="btn-ghost" id="exportBtn">Export CSV</button>
+      <button type="button" class="btn-ghost" id="changePwBtn">Change Password</button>
       <button type="button" class="btn-ghost" id="logoutBtn">Sign Out</button>
     </header>
 
     <p class="msg err" id="dashMsg" hidden></p>
+
+    <section class="panel pw-panel" id="pwPanel" hidden>
+      <h2>Change Password</h2>
+      <form id="changePwForm" novalidate>
+        <div class="field">
+          <label for="cpNew">New Password</label>
+          <div class="pw">
+            <input id="cpNew" type="password" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-toggle="cpNew" aria-label="Show password" aria-pressed="false"><svg class="i-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="i-hide" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="cpNew2">Confirm New Password</label>
+          <div class="pw">
+            <input id="cpNew2" type="password" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-toggle="cpNew2" aria-label="Show password" aria-pressed="false"><svg class="i-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="i-hide" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="submit" class="btn-primary" id="cpSave">Save New Password</button>
+          <button type="button" class="btn-ghost" id="cpCancel">Cancel</button>
+        </div>
+        <p class="msg" id="cpMsg" role="status"></p>
+      </form>
+    </section>
     <p class="demo-banner" id="demoBanner" hidden>Demo mode: these are example entries, not real quiz data. Sign in to see real entries.</p>
 
     <section class="tiles" aria-label="Summary">
@@ -448,7 +476,39 @@
     input.focus();
   }));
 
-  $("logoutBtn").addEventListener("click", async () => { await sb.auth.signOut(); entered = false; all = []; showLogin(""); });
+  // Change password while signed in (no email needed)
+  function closePwPanel() {
+    $("pwPanel").hidden = true;
+    $("cpNew").value = $("cpNew2").value = "";
+    $("cpMsg").textContent = "";
+  }
+  $("changePwBtn").addEventListener("click", () => {
+    if (DEMO) { $("dashMsg").textContent = "Password change is not available in demo mode."; $("dashMsg").hidden = false; return; }
+    $("pwPanel").hidden = !$("pwPanel").hidden;
+    if (!$("pwPanel").hidden) { $("cpMsg").textContent = ""; $("cpNew").focus(); }
+  });
+  $("cpCancel").addEventListener("click", closePwPanel);
+  $("changePwForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const p1 = $("cpNew").value, p2 = $("cpNew2").value;
+    const say = (t, ok) => { $("cpMsg").textContent = t; $("cpMsg").className = "msg " + (ok ? "ok" : "err"); };
+    if (p1.length < 8) { say("Password must be at least 8 characters."); return; }
+    if (p1 !== p2) { say("The two passwords do not match."); return; }
+    $("cpSave").disabled = true;
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    $("cpSave").disabled = false;
+    if (error) {
+      say(/different from the old/i.test(error.message) ? "New password must be different from your current password."
+        : /reauthentication|recent/i.test(error.message) ? "For security, please sign out, sign in again, and then change your password."
+        : error.message);
+      return;
+    }
+    $("cpNew").value = $("cpNew2").value = "";
+    say("Password updated. Use the new password next time you sign in.", true);
+  });
+
+  $("logoutBtn").addEventListener("click", async () => {
+    closePwPanel(); await sb.auth.signOut(); entered = false; all = []; showLogin(""); });
 
   // ---------- Data ----------
   async function load() {
