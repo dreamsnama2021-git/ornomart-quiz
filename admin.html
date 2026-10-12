@@ -456,6 +456,7 @@
     $("newPassBtn").disabled = true;
     const { error } = await sb.auth.updateUser({ password: p1 });
     $("newPassBtn").disabled = false;
+    if (error && /session missing/i.test(error.message)) { showAuth("forgot", "This reset link has expired. Please request a new one."); return; }
     if (error) { showAuth("newpass", error.message); return; }
     $("newPass").value = $("newPass2").value = "";
     recovering = false;
@@ -495,8 +496,22 @@
     if (p1.length < 8) { say("Password must be at least 8 characters."); return; }
     if (p1 !== p2) { say("The two passwords do not match."); return; }
     $("cpSave").disabled = true;
+    const { data: cur } = await sb.auth.getSession();
+    if (!cur.session) {
+      $("cpSave").disabled = false;
+      entered = false; all = [];
+      closePwPanel();
+      showLogin("Your sign-in has expired. Please sign in again." + " Then click Change Password again.");
+      return;
+    }
     const { error } = await sb.auth.updateUser({ password: p1 });
     $("cpSave").disabled = false;
+    if (error && /session missing|not authenticated|jwt/i.test(error.message)) {
+      entered = false; all = [];
+      closePwPanel();
+      showLogin("Your sign-in has expired. Please sign in again." + " Then click Change Password again.");
+      return;
+    }
     if (error) {
       say(/different from the old/i.test(error.message) ? "New password must be different from your current password."
         : /reauthentication|recent/i.test(error.message) ? "For security, please sign out, sign in again, and then change your password."
@@ -508,7 +523,7 @@
   });
 
   $("logoutBtn").addEventListener("click", async () => {
-    closePwPanel(); await sb.auth.signOut(); entered = false; all = []; showLogin(""); });
+    closePwPanel(); entered = false; all = []; await sb.auth.signOut(); showLogin(""); });
 
   // ---------- Data ----------
   async function load() {
@@ -719,6 +734,18 @@
       if (location.hash.includes("access_token")) cleanUrl();
       setTimeout(() => enterDashboard(session), 0);
     }
+    if (event === "SIGNED_OUT" && entered) {
+      entered = false; all = [];
+      closePwPanel();
+      showLogin("Your sign-in has expired. Please sign in again.");
+    }
+  });
+
+  // Coming back to a tab left open for a long time: make sure the sign-in is still valid.
+  document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState !== "visible" || !entered) return;
+    const { data } = await sb.auth.getSession();
+    if (!data.session) { entered = false; all = []; closePwPanel(); showLogin("Your sign-in has expired. Please sign in again."); }
   });
 })();
 </script>
