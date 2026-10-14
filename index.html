@@ -472,7 +472,6 @@
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let tail = ""; for (let i = 0; i < 5; i++) tail += chars[Math.floor(Math.random() * chars.length)];
     const code = c.prefix + "-" + tail;
-    const valid = new Date(Date.now() + 30 * 864e5).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
     $("scoreBig").textContent = score;
     $("verdict").textContent =
@@ -483,7 +482,7 @@
     $("couponOff").textContent = c.off;
     $("couponBasis").textContent = c.basis;
     $("couponCode").textContent = code;
-    $("couponFine").textContent = "For " + user.name + " · Valid till " + valid + " · Show this code at the store.";
+    $("couponFine").textContent = "For " + user.name + " · Valid till 31st Dec 26. Show this code at the store.";
     $("timeoutNote").hidden = !timedOut;
     $("copyBtn").textContent = "Copy code";
 

@@ -363,13 +363,15 @@
     }
     return rows.sort((x, y) => y.created_at.localeCompare(x.created_at));
   }
-  const COUPON_DAYS = 30;
+  // Every coupon is valid until the end of 31 Dec 2026 (India time).
+  const COUPON_EXPIRES = new Date("2026-12-31T23:59:59+05:30");
+  const EXPIRY_TEXT = "31st Dec 26";
   let all = [];
 
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmtDate = (iso) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
   const fmtTime = (s) => s == null ? "–" : Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
-  const isExpired = (r) => !r.redeemed_at && (Date.now() - new Date(r.created_at).getTime()) > COUPON_DAYS * 864e5;
+  const isExpired = (r) => !r.redeemed_at && Date.now() > COUPON_EXPIRES.getTime();
   const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
 
   // ---------- Auth ----------
@@ -692,7 +694,7 @@
       <div><span class="code">${esc(r.coupon_code)}</span> · <strong>${esc(r.discount)} off diamond price &amp; making charges</strong> ${statusPill(r)}</div>
       <span>${esc(r.name)} · ${esc(r.phone)} · Score ${r.score}/${r.total}</span>
       <span>Issued ${esc(fmtDate(r.created_at))}${r.redeemed_at ? " · Redeemed " + esc(fmtDate(r.redeemed_at)) : ""}</span>
-      ${!r.redeemed_at ? `<div><button type="button" class="btn-primary btn-small" id="lookupRedeem" ${expired ? "disabled" : ""}>Mark redeemed</button>${expired ? ' <span style="color:var(--bad)">Coupon expired (older than ' + COUPON_DAYS + ' days)</span>' : ""}</div>` : ""}`;
+      ${!r.redeemed_at ? `<div><button type="button" class="btn-primary btn-small" id="lookupRedeem" ${expired ? "disabled" : ""}>Mark redeemed</button>${expired ? ' <span style="color:var(--bad)">Coupon expired (valid till ' + EXPIRY_TEXT + ')</span>' : ""}</div>` : ""}`;
     const btn = $("lookupRedeem");
     if (btn) btn.addEventListener("click", async () => { if (await setRedeemed(r.id, true, btn)) showLookup(); });
   }

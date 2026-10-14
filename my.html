@@ -142,7 +142,7 @@
 
     <section class="panel">
       <h2>Your Coupons</h2>
-      <p class="note">Show an active coupon code at the Ornomart store. Each coupon is valid for 30 days and can be used once.</p>
+      <p class="note">Show an active coupon code at the Ornomart store. All coupons are valid till 31st Dec 26 and can be used once.</p>
       <div class="tickets" id="tickets"></div>
     </section>
   </div>
@@ -157,7 +157,9 @@
   const configured = window.supabase && cfg.SUPABASE_URL && !/YOUR-/.test(cfg.SUPABASE_URL + cfg.SUPABASE_ANON_KEY);
   // Same storage key as the quiz, so a player signed in with Google there is signed in here too.
   const sb = configured ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { storageKey: "ornomart-quiz-player" } }) : null;
-  const COUPON_DAYS = 30;
+  // Every coupon is valid until the end of 31 Dec 2026 (India time).
+  const COUPON_EXPIRES = new Date("2026-12-31T23:59:59+05:30");
+  const EXPIRY_TEXT = "31st Dec 26";
   let mode = null; // "google" or "phone"
 
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -165,7 +167,7 @@
 
   function status(r) {
     if (r.redeemed_at) return "used";
-    return Date.now() - new Date(r.created_at).getTime() > COUPON_DAYS * 864e5 ? "expired" : "active";
+    return Date.now() > COUPON_EXPIRES.getTime() ? "expired" : "active";
   }
 
   function showLookup(msg) {
@@ -195,8 +197,7 @@
     const label = { active: "Active", used: "Redeemed", expired: "Expired" };
     $("tickets").innerHTML = rows.map((r, i) => {
       const st = status(r);
-      const until = new Date(new Date(r.created_at).getTime() + COUPON_DAYS * 864e5);
-      const when = st === "used" ? "Redeemed on " + fmtDate(r.redeemed_at) : st === "expired" ? "Expired on " + fmtDate(until) : "Valid till " + fmtDate(until);
+      const when = st === "used" ? "Redeemed on " + fmtDate(r.redeemed_at) : st === "expired" ? "Expired on " + EXPIRY_TEXT : "Valid till " + EXPIRY_TEXT;
       return `
         <article class="ticket ${st}">
           <div class="off"><strong>${esc(r.discount)}</strong><span>Off</span></div>
